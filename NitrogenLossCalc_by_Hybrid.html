@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>N Loss Calculator - Burrus Field Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@400;700;900&family=Source+Serif+4:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{--gold:#b8972a;--gold-d:#8a6f1e;--gold-l:#d4b84a;--dark:#1c1a16;--dbg:#252018;--red:#c0392b;--green:#2e7d32;--amber:#e67e22;--tan:#f2ece0;--panel:#faf7f0;--border:#d0c49a;--muted:#7a6a4a;--inp:#fff;}
+html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Serif 4",Georgia,serif;color:var(--dark);}
+#topbar{position:fixed;inset:0 0 auto 0;height:52px;z-index:200;background:var(--dbg);border-bottom:2px solid var(--gold);display:flex;align-items:center;justify-content:space-between;padding:0 14px;}
+#tb-logo-wrap{display:flex;align-items:center;gap:10px;}
+#tb-icon{width:32px;height:32px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;}
+#tb-title{font-family:"DM Mono",monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-l);}
+#tb-badge{font-family:"DM Mono",monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:#555;border:1px solid #333;border-radius:4px;padding:2px 7px;}
+#main{position:fixed;inset:52px 0 0 0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--tan);padding:14px 14px 40px;}
+.card{background:var(--panel);border-radius:10px;padding:14px;margin-bottom:12px;box-shadow:0 1px 8px rgba(0,0,0,.08);}
+.ctitle{font-family:"DM Mono",monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:7px;margin-bottom:13px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+.fg:last-child{margin-bottom:0;}
+.fg label{font-family:"DM Mono",monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+.fg input,.fg select,.fg textarea{padding:12px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;color:var(--dark);background:var(--inp);font-family:"Source Serif 4",serif;outline:none;width:100%;-webkit-appearance:none;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold);}
+.fg input[readonly]{background:#f5ede0;color:var(--gold-d);border-color:#e0c880;font-weight:600;}
+.fg textarea{min-height:68px;resize:vertical;line-height:1.5;}
+.hint{font-family:"DM Mono",monospace;font-size:9px;color:var(--muted);line-height:1.5;}
+.seg{display:flex;gap:6px;flex-wrap:wrap;}
+.seg.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.seg.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.seg-btn{flex:1;min-width:0;padding:9px 6px;background:rgba(200,140,60,0.07);border:1.5px solid var(--border);color:var(--muted);border-radius:8px;font-family:"DM Mono",monospace;font-size:10px;font-weight:700;cursor:pointer;text-align:center;line-height:1.3;}
+.seg-btn.on{background:var(--gold);border-color:var(--gold);color:var(--dbg);}
+.seg-btn.green-on{background:var(--green);border-color:var(--green);color:#fff;}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;}
+.toggle-row+.toggle-row{border-top:1px solid var(--border);}
+.toggle-lbl{font-family:"DM Mono",monospace;font-size:10px;color:var(--dark);line-height:1.4;}
+.toggle-sub{font-family:"DM Mono",monospace;font-size:9px;color:var(--muted);margin-top:2px;}
+.toggle-switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;margin-left:12px;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-track{position:absolute;inset:0;background:#ccc;border-radius:24px;cursor:pointer;transition:background .25s;}
+.toggle-switch input:checked+.toggle-track{background:var(--gold);}
+.toggle-thumb{position:absolute;height:18px;width:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .25s;}
+.toggle-switch input:checked+.toggle-track .toggle-thumb{transform:translateX(20px);}
+.credit-panel{overflow:hidden;transition:max-height .4s ease,opacity .35s ease;max-height:0;opacity:0;pointer-events:none;}
+.credit-panel.open{max-height:800px;opacity:1;pointer-events:auto;}
+.info-row{display:flex;align-items:flex-start;gap:8px;background:#f0e8d8;border-radius:8px;padding:10px 12px;margin-bottom:10px;}
+.info-text{font-family:"DM Mono",monospace;font-size:9.5px;color:var(--muted);line-height:1.6;}
+.fert-note{font-family:"DM Mono",monospace;font-size:9px;color:var(--muted);background:#f5f0e4;border:1px solid var(--border);border-radius:6px;padding:7px 10px;margin-top:6px;line-height:1.5;}
+.stage-callout{border-radius:8px;padding:11px 13px;margin-top:10px;font-family:"DM Mono",monospace;font-size:10px;line-height:1.6;border:1.5px solid;}
+.stage-callout.ok{background:#edf7ed;border-color:#81c784;color:#1b5e20;}
+.stage-callout.warn{background:#fff8e1;border-color:#ffca28;color:#5d4037;}
+.stage-callout.urgent{background:#fdecea;border-color:#ef9a9a;color:#7f0000;}
+.econ-box{background:linear-gradient(135deg,#1c2a1c,#1a2218);border:1.5px solid var(--green);border-radius:10px;padding:14px;margin-top:10px;}
+.econ-title{font-family:"DM Mono",monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#81c784;margin-bottom:10px;}
+.econ-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.econ-lbl{font-family:"DM Mono",monospace;font-size:9px;color:#aaa;}
+.econ-val{font-family:"Playfair Display",serif;font-size:18px;font-weight:700;color:#81c784;}
+.econ-val.warn{color:#ffca28;}
+.econ-val.bad{color:#ef9a9a;}
+.risk-bar-wrap{background:#e8e0d0;border-radius:6px;height:12px;overflow:hidden;margin:8px 0 4px;}
+.risk-bar{height:100%;border-radius:6px;transition:width .4s ease,background .4s;width:0;}
+.risk-labels{display:flex;justify-content:space-between;font-family:"DM Mono",monospace;font-size:8px;color:var(--muted);}
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.res-tile{background:var(--panel);border-radius:10px;padding:14px;border:1.5px solid var(--border);text-align:center;}
+.res-tile.primary{background:linear-gradient(135deg,#2a2218,#1c1a16);border-color:var(--gold);}
+.res-tile.warn{border-color:var(--amber);}
+.res-tile.ok{border-color:var(--green);}
+.res-tile.bad{border-color:var(--red);}
+.res-lbl{font-family:"DM Mono",monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.res-tile.primary .res-lbl{color:rgba(184,151,42,0.7);}
+.res-val{font-family:"Playfair Display",serif;font-size:28px;font-weight:700;color:var(--dark);}
+.res-tile.primary .res-val{color:var(--gold-l);}
+.res-unit{font-family:"DM Mono",monospace;font-size:10px;color:var(--muted);margin-top:2px;}
+.res-tile.primary .res-unit{color:rgba(184,151,42,0.55);}
+.res-sub{font-family:"DM Mono",monospace;font-size:8px;color:rgba(184,151,42,0.6);margin-top:4px;line-height:1.4;}
+.breakdown{background:var(--panel);border-radius:10px;overflow:hidden;margin-bottom:12px;box-shadow:0 1px 8px rgba(0,0,0,.08);}
+.bk-hdr{background:var(--dbg);padding:10px 14px;font-family:"DM Mono",monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);}
+.bk-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);}
+.bk-row:last-child{border-bottom:none;}
+.bk-name{font-family:"Source Serif 4",serif;font-size:13px;color:var(--dark);}
+.bk-sub{font-family:"DM Mono",monospace;font-size:9px;color:var(--muted);margin-top:2px;}
+.bk-val{font-family:"DM Mono",monospace;font-size:14px;font-weight:500;}
+.bk-val.neg{color:var(--red);}
+.bk-val.pos{color:var(--green);}
+.bk-val.neutral{color:var(--dark);}
+.rec-box{border-radius:10px;padding:14px;margin-bottom:12px;}
+.rec-box.low{background:#edf7ed;border:1.5px solid #81c784;}
+.rec-box.med{background:#fff8e1;border:1.5px solid #ffca28;}
+.rec-box.high{background:#fdecea;border:1.5px solid #ef9a9a;}
+.rec-icon{font-size:22px;font-family:"DM Mono",monospace;font-weight:700;margin-bottom:6px;}
+.rec-icon.low{color:var(--green);}
+.rec-icon.med{color:#b8860b;}
+.rec-icon.high{color:var(--red);}
+.rec-title{font-family:"Playfair Display",serif;font-size:17px;font-weight:700;margin-bottom:5px;}
+.rec-title.low{color:var(--green);}
+.rec-title.med{color:#b8860b;}
+.rec-title.high{color:var(--red);}
+.rec-body{font-family:"DM Mono",monospace;font-size:10px;line-height:1.7;color:#444;}
+.savebtn{width:100%;padding:14px;border-radius:8px;border:none;background:var(--gold);color:var(--dbg);font-family:"DM Mono",monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-weight:600;margin-top:4px;}
+.savebtn:active{opacity:.85;}
+.rstbtn{width:100%;padding:13px;border-radius:8px;border:1.5px solid #777;background:transparent;color:#777;font-family:"DM Mono",monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:8px;}
+.dl-row{display:flex;gap:10px;margin-bottom:12px;}
+.dlbtn{flex:1;padding:14px;border-radius:8px;border:none;font-family:"DM Mono",monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-weight:600;}
+.dlbtn.gold{background:var(--gold);color:var(--dbg);}
+.dlbtn.outline{background:transparent;color:var(--gold);border:1.5px solid var(--gold);}
+.canvas-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:#ccc8bb;border-radius:8px;padding:10px;margin-bottom:12px;}
+.canvas-wrap canvas{display:block;border-radius:4px;}
+.hybrid-badge{display:inline-block;font-family:"DM Mono",monospace;font-size:8px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;vertical-align:middle;}
+.hybrid-badge.flex{background:#1b5e20;color:#a5d6a7;}
+.hybrid-badge.semi{background:#4a3800;color:#ffe082;}
+.hybrid-badge.fixed{background:#1a237e;color:#90caf9;}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <div id="tb-logo-wrap">
+    <div id="tb-icon">N</div>
+    <div id="tb-title">N Loss Calculator</div>
+  </div>
+  <div id="tb-badge">Burrus Field Tools</div>
+</div>
+<div id="main">
+
+<!-- FIELD INFO -->
+<div class="card">
+  <div class="ctitle">Field Information</div>
+  <div class="row2">
+    <div class="fg"><label>Grower Name</label><input type="text" id="grower" placeholder="Grower name"></div>
+    <div class="fg"><label>Field ID</label><input type="text" id="field" placeholder="Field name / ID"></div>
+  </div>
+  <div class="fg"><label>Yield Goal (bu/ac)</label><input type="number" id="yieldGoal" placeholder="e.g. 200" min="100" max="350"></div>
+</div>
+
+<!-- HYBRID -->
+<div class="card">
+  <div class="ctitle">Hybrid Selection</div>
+  <div class="fg" style="position:relative;">
+    <label>Search Hybrid</label>
+    <input type="text" id="hybridSearch" placeholder="Type to search e.g. 6N54, 2W400..." autocomplete="off" autocorrect="off" spellcheck="false">
+    <div id="hybrid-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--gold);border-radius:0 0 8px 8px;max-height:220px;overflow-y:auto;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.15);"></div>
+  </div>
+  <div id="hybrid-info" style="display:none;margin-top:8px;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+      <span id="hybrid-ear-badge" class="hybrid-badge"></span>
+      <span id="hybrid-prod-badge" style="font-family:&quot;DM Mono&quot;,monospace;font-size:9px;color:var(--muted);"></span>
+    </div>
+    <div class="fert-note" id="hybrid-n-note"></div>
+  </div>
+</div>
+
+<!-- SOIL -->
+<div class="card">
+  <div class="ctitle">Soil Properties</div>
+  <div class="fg">
+    <label>Soil Texture</label>
+    <div class="seg grid2" id="seg-soilTexture">
+      <button class="seg-btn"    data-val="sand">Sand / Loamy Sand</button>
+      <button class="seg-btn"    data-val="sandy_loam">Sandy Loam</button>
+      <button class="seg-btn"    data-val="loam">Loam</button>
+      <button class="seg-btn on" data-val="silt_loam">Silt Loam</button>
+      <button class="seg-btn"    data-val="scl">Sandy Clay Loam</button>
+      <button class="seg-btn"    data-val="clay_loam">Clay Loam</button>
+      <button class="seg-btn"    data-val="sicl">Silty Clay Loam</button>
+      <button class="seg-btn"    data-val="clay">Clay / Silty Clay</button>
+    </div>
+    <div class="hint" id="texture-hint">Silt Loam: baseline leaching (0.8x) and denitrification (1.0x) risk</div>
+  </div>
+  <div class="fg" style="margin-top:10px;">
+    <label>Drainage Class</label>
+    <div class="seg" id="seg-drainage">
+      <button class="seg-btn" data-val="poor">Poor</button>
+      <button class="seg-btn on" data-val="moderate">Moderate</button>
+      <button class="seg-btn" data-val="well">Well</button>
+    </div>
+  </div>
+  <div class="fg" style="margin-top:10px;">
+    <label>Tillage System</label>
+    <div class="seg grid3" id="seg-tillage">
+      <button class="seg-btn on" data-val="conv">Conventional Till</button>
+      <button class="seg-btn" data-val="min">Min-Till / Strip-Till</button>
+      <button class="seg-btn" data-val="notill">No-Till</button>
+    </div>
+    <div class="hint" id="tillage-hint">Conventional till: full SOM mineralization rate (~10 lbs N per 1% SOM)</div>
+  </div>
+  <div class="fg" style="margin-top:10px;">
+    <label>Soil Organic Matter (%)</label>
+    <div class="seg" id="seg-som">
+      <button class="seg-btn" data-val="1">Under 1.5%</button>
+      <button class="seg-btn on" data-val="2">1.5-2.5%</button>
+      <button class="seg-btn" data-val="3">2.5-3.5%</button>
+      <button class="seg-btn" data-val="4">3.5-4.5%</button>
+      <button class="seg-btn" data-val="5">Over 4.5%</button>
+    </div>
+    <div class="hint" id="som-hint">SOM mineralization: ~20-25 lbs N/ac per 1% OM per season</div>
+  </div>
+</div>
+
+<!-- N APPLICATION -->
+<div class="card">
+  <div class="ctitle">Nitrogen Applied</div>
+  <div class="fg">
+    <label>Primary N Applied (lbs/ac)</label>
+    <input type="number" id="nApplied" placeholder="e.g. 160" min="0" max="400">
+  </div>
+  <div class="fg">
+    <label>Application Timing</label>
+    <div class="seg grid2" id="seg-appTiming">
+      <button class="seg-btn" data-val="fall_cold">Fall &lt;50F Soil</button>
+      <button class="seg-btn" data-val="fall_warm">Fall &gt;50F Soil</button>
+      <button class="seg-btn on" data-val="spring">Spring Pre-Plant</button>
+      <button class="seg-btn" data-val="sidedress">Side-Dress Only</button>
+    </div>
+    <div class="fert-note" id="timing-note">Spring pre-plant: baseline loss risk. Apply when soil temps below 50F for best retention.</div>
+  </div>
+  <div class="fg">
+    <label>Primary N Source</label>
+    <div class="seg grid2" id="seg-fertSource">
+      <button class="seg-btn on" data-val="anhydrous">Anhydrous NH3</button>
+      <button class="seg-btn" data-val="urea">Urea (46-0-0)</button>
+      <button class="seg-btn" data-val="uan28">UAN 28%</button>
+      <button class="seg-btn" data-val="uan32">UAN 32%</button>
+      <button class="seg-btn" data-val="ams">AMS (21-0-0-24S)</button>
+      <button class="seg-btn" data-val="other">Other/Blend</button>
+    </div>
+    <div class="fert-note" id="fert-note">Anhydrous: stays as NH4+ longer - lower early leaching and denitrification risk.</div>
+  </div>
+
+  <div style="border-top:1px solid var(--border);margin:10px 0;"></div>
+
+  <!-- UAN stabilizer — shown only when UAN selected -->
+  <div id="uan-stabilizer-row" style="display:none;">
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-lbl">UAN Volatilization Stabilizer Used</div>
+        <div class="toggle-sub">e.g. Anvol, NutriSphere, Super U blend</div>
+      </div>
+      <label class="toggle-switch"><input type="checkbox" id="uanStabilizer"><span class="toggle-track"><span class="toggle-thumb"></span></span></label>
+    </div>
+  </div>
+
+  <!-- Inhibitor -->
+  <div class="toggle-row">
+    <div>
+      <div class="toggle-lbl">Nitrification Inhibitor Used</div>
+      <div class="toggle-sub">e.g. N-Serve, Instinct, Centuro</div>
+    </div>
+    <label class="toggle-switch"><input type="checkbox" id="inhibitor"><span class="toggle-track"><span class="toggle-thumb"></span></span></label>
+  </div>
+
+  <!-- Corn on Corn / Immobilization -->
+  <div class="toggle-row">
+    <div>
+      <div class="toggle-lbl">Corn on Corn or No-Till into Green Cover</div>
+      <div class="toggle-sub">High-residue immobilization risk</div>
+    </div>
+    <label class="toggle-switch"><input type="checkbox" id="toggle-immob"><span class="toggle-track"><span class="toggle-thumb"></span></span></label>
+  </div>
+  <div class="credit-panel" id="panel-immob">
+    <div class="info-row" style="margin-top:6px;">
+      <div class="info-text">High C:N residue ties up 10-25 lbs N/ac during decomposition. No-till into living green cover (cereal rye, winter wheat) is especially high risk. Add this N to your requirement.</div>
+    </div>
+    <div class="fg" style="margin-bottom:6px;">
+      <label>Residue / Cover Situation</label>
+      <div class="seg grid2" id="seg-immob">
+        <button class="seg-btn on" data-val="10">Corn on Corn</button>
+        <button class="seg-btn" data-val="20">No-Till Green Cover</button>
+        <button class="seg-btn" data-val="15">No-Till High Residue</button>
+        <button class="seg-btn" data-val="5">Min-Till Corn Stubble</button>
+      </div>
+      <div class="hint" id="immob-hint">Immobilization credit added to N requirement</div>
+    </div>
+  </div>
+
+  <!-- MAP/DAP -->
+  <div class="toggle-row">
+    <div>
+      <div class="toggle-lbl">Include N from MAP / DAP Applied for P</div>
+      <div class="toggle-sub">Enter lbs P2O5 applied — N back-calculated</div>
+    </div>
+    <label class="toggle-switch"><input type="checkbox" id="toggle-pcredit"><span class="toggle-track"><span class="toggle-thumb"></span></span></label>
+  </div>
+  <div class="credit-panel" id="panel-pcredit">
+    <div class="row2" style="margin-top:6px;">
+      <div class="fg">
+        <label>MAP P2O5 (lbs/ac)</label>
+        <input type="number" id="mapLbs" placeholder="0" min="0" max="400">
+        <div class="hint" id="map-hint" style="color:var(--gold-d);"></div>
+      </div>
+      <div class="fg">
+        <label>DAP P2O5 (lbs/ac)</label>
+        <input type="number" id="dapLbs" placeholder="0" min="0" max="400">
+        <div class="hint" id="dap-hint" style="color:var(--gold-d);"></div>
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:4px;">
+      <label>N Credit from MAP + DAP</label>
+      <input type="text" id="pCreditDisplay" readonly placeholder="0 lbs N/ac">
+    </div>
+  </div>
+
+  <!-- Manure -->
+  <div class="toggle-row">
+    <div>
+      <div class="toggle-lbl">Manure Applied</div>
+      <div class="toggle-sub">Reduces primary N requirement</div>
+    </div>
+    <label class="toggle-switch"><input type="checkbox" id="toggle-manure"><span class="toggle-track"><span class="toggle-thumb"></span></span></label>
+  </div>
+  <div class="credit-panel" id="panel-manure">
+    <div class="info-row" style="margin-top:6px;">
+      <div class="info-text">First-year N availability: hog liquid ~60-70%, cattle solid ~30-40%, poultry ~70-80%. Enter estimated plant-available N credit.</div>
+    </div>
+    <div class="row2">
+      <div class="fg">
+        <label>Manure Type</label>
+        <div class="seg" id="seg-manureType" style="flex-direction:column;gap:5px;">
+          <button class="seg-btn on" data-val="hog_liquid">Hog Liquid</button>
+          <button class="seg-btn" data-val="cattle_solid">Cattle Solid</button>
+          <button class="seg-btn" data-val="poultry">Poultry</button>
+          <button class="seg-btn" data-val="custom">Custom/Known</button>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Plant-Avail. N Credit (lbs/ac)</label>
+        <input type="number" id="manureN" placeholder="e.g. 60" min="0" max="300">
+        <div class="hint" id="manure-hint" style="color:var(--gold-d);"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Soybean -->
+  <div class="toggle-row">
+    <div>
+      <div class="toggle-lbl">Include N Credit from Previous Soybeans</div>
+      <div class="toggle-sub">Reduces total N requirement</div>
+    </div>
+    <label class="toggle-switch"><input type="checkbox" id="toggle-soycredit"><span class="toggle-track"><span class="toggle-thumb"></span></span></label>
+  </div>
+  <div class="credit-panel" id="panel-soycredit">
+    <div class="fg" style="margin-top:6px;">
+      <label>Previous Soybean Yield (bu/ac)</label>
+      <div class="seg" id="seg-soyyield">
+        <button class="seg-btn on" data-val="40">Under 45 bpa  (20 lbs N credit)</button>
+        <button class="seg-btn" data-val="50">45 bpa and over  (30 lbs N credit)</button>
+      </div>
+    </div>
+    <div class="fg" style="margin-top:8px;margin-bottom:4px;">
+      <label>Soybean N Credit</label>
+      <input type="text" id="soyCreditDisplay" readonly placeholder="0 lbs N/ac">
+    </div>
+  </div>
+</div>
+
+<!-- CONDITIONS -->
+<div class="card">
+  <div class="ctitle">Conditions Since Application</div>
+  <div class="fg">
+    <label>Excess Rainfall / Saturation Events</label>
+    <div class="seg" id="seg-rainfall">
+      <button class="seg-btn green-on" data-val="none">None</button>
+      <button class="seg-btn" data-val="light">1-2 in</button>
+      <button class="seg-btn" data-val="moderate">3-4 in</button>
+      <button class="seg-btn" data-val="heavy">5-6 in</button>
+      <button class="seg-btn" data-val="extreme">7+ in</button>
+    </div>
+    <div class="hint">Excess rainfall above crop ET since N application</div>
+  </div>
+  <div class="fg" style="margin-top:12px;">
+    <label>Days Saturated Soil / Tile Running</label>
+    <div class="seg" id="seg-satDays">
+      <button class="seg-btn green-on" data-val="0">0 days</button>
+      <button class="seg-btn" data-val="3">1-3</button>
+      <button class="seg-btn" data-val="7">4-7</button>
+      <button class="seg-btn" data-val="14">8-14</button>
+      <button class="seg-btn" data-val="21">15+</button>
+    </div>
+  </div>
+  <div class="fg" style="margin-top:12px;">
+    <label>Soil Temp During Saturation (avg F)</label>
+    <div class="seg" id="seg-soilTemp">
+      <button class="seg-btn green-on" data-val="cold">Under 50F</button>
+      <button class="seg-btn" data-val="cool">50-60F</button>
+      <button class="seg-btn" data-val="warm">61-70F</button>
+      <button class="seg-btn" data-val="hot">Over 70F</button>
+    </div>
+    <div class="hint">Warmer temps accelerate denitrification and volatilization</div>
+  </div>
+  <div class="fg" style="margin-top:12px;">
+    <label>Days UAN/Urea Exposed Before Rain (surface only)</label>
+    <div class="seg" id="seg-exposeDays">
+      <button class="seg-btn green-on" data-val="0">Rain same day</button>
+      <button class="seg-btn" data-val="3">1-3 days</button>
+      <button class="seg-btn" data-val="7">4-7 days</button>
+      <button class="seg-btn" data-val="14">8-14 days</button>
+      <button class="seg-btn" data-val="21">15+ days</button>
+    </div>
+    <div class="hint">Only affects UAN/Urea surface applications. Longer exposure = more volatilization.</div>
+  </div>
+  <div class="fg" style="margin-top:12px;">
+    <label>Current Corn Growth Stage</label>
+    <div class="seg" id="seg-growthStage">
+      <button class="seg-btn on" data-val="v3">V3-V4</button>
+      <button class="seg-btn" data-val="v5">V5-V6</button>
+      <button class="seg-btn" data-val="v8">V7-V8</button>
+      <button class="seg-btn" data-val="v10">V9-V10</button>
+      <button class="seg-btn" data-val="v12">V11+</button>
+    </div>
+  </div>
+  <div id="stage-callout" class="stage-callout ok" style="display:none;"></div>
+</div>
+
+<!-- OBSERVATIONS -->
+<div class="card">
+  <div class="ctitle">Field Observations</div>
+  <div class="fg">
+    <label>Visual N-Deficiency Symptoms</label>
+    <div class="seg" id="seg-symptoms">
+      <button class="seg-btn green-on" data-val="none">None</button>
+      <button class="seg-btn" data-val="mild">Mild</button>
+      <button class="seg-btn" data-val="moderate">Moderate</button>
+      <button class="seg-btn" data-val="severe">Severe</button>
+    </div>
+    <div class="hint">Yellowing / firing from bottom leaves upward</div>
+  </div>
+  <div class="fg" style="margin-top:12px;">
+    <label>Overall Crop Color</label>
+    <div class="seg" id="seg-cropColor">
+      <button class="seg-btn green-on" data-val="dark">Dark Green</button>
+      <button class="seg-btn" data-val="light">Light Green</button>
+      <button class="seg-btn" data-val="yellow">Yellowing</button>
+    </div>
+  </div>
+  <div class="fg" style="margin-top:12px;">
+    <label>Field Notes (optional)</label>
+    <textarea id="fieldNotes" placeholder="Observations, conditions, areas of concern..."></textarea>
+  </div>
+</div>
+
+<!-- SIDE-DRESS ECONOMICS -->
+<div class="card">
+  <div class="ctitle">Side-Dress Economics</div>
+  <div class="info-row">
+    <div class="info-text">Defaults based on current market prices per ton. Override any value. Cost calculated from selected side-dress product.</div>
+  </div>
+  <div class="row2">
+    <div class="fg">
+      <label>Corn Price ($/bu)</label>
+      <input type="number" id="cornPrice" placeholder="e.g. 4.50" min="2" max="12" step="0.05">
+    </div>
+    <div class="fg">
+      <label>Side-Dress Product</label>
+      <select id="sdProduct">
+        <option value="anhydrous">Anhydrous NH3 (82-0-0)</option>
+        <option value="urea" selected>Urea (46-0-0)</option>
+        <option value="uan28">UAN 28%</option>
+        <option value="uan32">UAN 32%</option>
+        <option value="an">Ammonium Nitrate (34-0-0)</option>
+        <option value="ams_sd">AMS (21-0-0-24S)</option>
+        <option value="ats">Ammonium Thiosulfate (12-0-0-26S)</option>
+      </select>
+    </div>
+  </div>
+  <div class="row2">
+    <div class="fg">
+      <label>Product Price ($/ton) — override</label>
+      <input type="number" id="nPriceTon" min="100" max="3000" step="5">
+      <div class="hint" id="nPriceTon-hint"></div>
+    </div>
+    <div class="fg">
+      <label>Price per lb N (auto)</label>
+      <input type="text" id="nPriceLbN" readonly placeholder="$/lb N">
+    </div>
+  </div>
+  <div class="row2">
+    <div class="fg">
+      <label>Application Cost ($/ac)</label>
+      <input type="number" id="appCost" placeholder="e.g. 18" min="0" max="100" step="1" value="18">
+      <div class="hint" id="appCost-hint">Default $18/ac — adjust for custom hire or owned equipment</div>
+    </div>
+    <div class="fg">
+      <label>Total Side-Dress Cost (auto)</label>
+      <input type="text" id="totalSdCost" readonly placeholder="$/ac">
+    </div>
+  </div>
+</div>
+
+<button class="savebtn" id="calc-btn">CALCULATE N LOSS AND SIDE-DRESS</button>
+
+<!-- RESULTS -->
+<div id="results-section" style="display:none;margin-top:16px;">
+
+  <div class="card">
+    <div class="ctitle">Estimated N Loss Risk</div>
+    <div id="risk-label" style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:6px;"></div>
+    <div class="risk-bar-wrap"><div class="risk-bar" id="risk-bar"></div></div>
+    <div class="risk-labels"><span>Low</span><span>Moderate</span><span>High</span><span>Severe</span></div>
+  </div>
+
+  <div class="results-grid">
+    <div class="res-tile primary">
+      <div class="res-lbl">Total N Budget</div>
+      <div class="res-val" id="r-applied">--</div>
+      <div class="res-unit">lbs/ac</div>
+      <div class="res-sub" id="r-applied-sub"></div>
+    </div>
+    <div class="res-tile" id="tile-lost">
+      <div class="res-lbl">Est. N Lost</div>
+      <div class="res-val" id="r-lost">--</div>
+      <div class="res-unit">lbs/ac</div>
+    </div>
+    <div class="res-tile" id="tile-remain">
+      <div class="res-lbl">N Remaining</div>
+      <div class="res-val" id="r-remain">--</div>
+      <div class="res-unit">lbs/ac</div>
+    </div>
+    <div class="res-tile" id="tile-needed">
+      <div class="res-lbl">N Required Range</div>
+      <div class="res-val" id="r-needed">--</div>
+      <div class="res-unit">lbs/ac</div>
+      <div class="res-sub" id="r-needed-sub" style="color:rgba(46,125,50,0.7);"></div>
+    </div>
+  </div>
+
+  <div class="breakdown">
+    <div class="bk-hdr">N Budget Breakdown — Credits</div>
+    <div class="bk-row" id="bk-row-som" style="display:none;">
+      <div><div class="bk-name">SOM Mineralization Credit</div><div class="bk-sub" id="bk-som-sub">Organic matter N release</div></div>
+      <div class="bk-val" id="bk-som" style="color:var(--gold-d);">--</div>
+    </div>
+    <div class="bk-row" id="bk-row-pcredit" style="display:none;">
+      <div><div class="bk-name">MAP / DAP N Credit</div><div class="bk-sub">N from P fertilizers applied</div></div>
+      <div class="bk-val pos" id="bk-pcredit">--</div>
+    </div>
+    <div class="bk-row" id="bk-row-manure" style="display:none;">
+      <div><div class="bk-name">Manure N Credit</div><div class="bk-sub">Plant-available manure N</div></div>
+      <div class="bk-val" id="bk-manure" style="color:var(--gold-d);">--</div>
+    </div>
+    <div class="bk-row" id="bk-row-soycredit" style="display:none;">
+      <div><div class="bk-name">Soybean N Credit</div><div class="bk-sub">Reduces N requirement</div></div>
+      <div class="bk-val" id="bk-soycredit" style="color:var(--gold-d);">--</div>
+    </div>
+    <div class="bk-row" id="bk-row-immob" style="display:none;">
+      <div><div class="bk-name">Immobilization Penalty</div><div class="bk-sub">High-residue N tie-up added to req.</div></div>
+      <div class="bk-val" id="bk-immob" style="color:var(--amber);">--</div>
+    </div>
+    <div class="bk-row" id="bk-row-hybrid" style="display:none;">
+      <div><div class="bk-name">Hybrid N Adjustment</div><div class="bk-sub" id="bk-hybrid-sub">Ear type / NUE</div></div>
+      <div class="bk-val" id="bk-hybrid">--</div>
+    </div>
+    <div class="bk-hdr" style="background:#2a2218;">Loss Pathways</div>
+    <div class="bk-row" id="bk-row-timing" style="display:none;">
+      <div><div class="bk-name">Fall Timing Loss Premium</div><div class="bk-sub">Applied before freeze-up risk</div></div>
+      <div class="bk-val neg" id="bk-timing">--</div>
+    </div>
+    <div class="bk-row">
+      <div><div class="bk-name">Denitrification</div><div class="bk-sub">Saturated / anaerobic soil loss</div></div>
+      <div class="bk-val neg" id="bk-denit">--</div>
+    </div>
+    <div class="bk-row">
+      <div><div class="bk-name">Leaching</div><div class="bk-sub">Nitrate below root zone</div></div>
+      <div class="bk-val neg" id="bk-leach">--</div>
+    </div>
+    <div class="bk-row">
+      <div><div class="bk-name">Volatilization</div><div class="bk-sub">Surface application loss</div></div>
+      <div class="bk-val neg" id="bk-volat">--</div>
+    </div>
+    <div class="bk-row">
+      <div><div class="bk-name">Inhibitor Protection</div><div class="bk-sub">N-Serve / Instinct / stabilizer savings</div></div>
+      <div class="bk-val pos" id="bk-inhib">--</div>
+    </div>
+    <div class="bk-row" style="background:#f5ede0;">
+      <div><div class="bk-name" style="font-weight:700;">Net N Available to Crop</div><div class="bk-sub">After all credits and losses</div></div>
+      <div class="bk-val neutral" id="bk-net" style="font-size:17px;font-weight:700;color:var(--gold-d);">--</div>
+    </div>
+  </div>
+
+  <div id="rec-box" class="rec-box low">
+    <div class="rec-icon low" id="rec-icon"></div>
+    <div class="rec-title" id="rec-title"></div>
+    <div class="rec-body" id="rec-body"></div>
+  </div>
+
+  <!-- Growth stage statement -->
+  <div id="stage-result-callout" class="stage-callout ok" style="margin-bottom:12px;display:none;"></div>
+
+  <!-- Economic threshold -->
+  <div class="econ-box" id="econ-box" style="display:none;">
+    <div class="econ-title">Economic Breakeven Analysis</div>
+    <div class="econ-row">
+      <div class="econ-lbl">Side-dress N needed</div>
+      <div class="econ-val" id="econ-sdN">--</div>
+    </div>
+    <div class="econ-row">
+      <div class="econ-lbl">Cost of application</div>
+      <div class="econ-val" id="econ-cost">--</div>
+    </div>
+    <div class="econ-row">
+      <div class="econ-lbl">Yield response needed to break even</div>
+      <div class="econ-val" id="econ-breakeven">--</div>
+    </div>
+    <div class="econ-row">
+      <div class="econ-lbl">Expected yield protected</div>
+      <div class="econ-val" id="econ-protected">--</div>
+    </div>
+    <div id="econ-verdict" style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;margin-top:8px;line-height:1.6;border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;"></div>
+  </div>
+
+  <div class="card" id="rate-card" style="display:none;">
+    <div class="ctitle">Side-Dress Rate by Product</div>
+    <div id="rate-rows"></div>
+    <div class="info-row" style="margin-top:8px;">
+      <div class="info-text">Side-dress by V8-V10 for maximum N uptake. UAN: use Y-Drop or dribble band. Anhydrous: apply between rows when corn is under V6.</div>
+    </div>
+  </div>
+
+  <div class="dl-row" id="dl-row" style="display:none;">
+    <button class="dlbtn gold" id="dl-btn">Download Report</button>
+    <button class="dlbtn outline" id="preview-btn">Preview</button>
+  </div>
+  <div class="canvas-wrap" id="canvas-wrap" style="display:none;">
+    <canvas id="report-canvas"></canvas>
+  </div>
+  <button class="rstbtn" id="reset-btn">RESET CALCULATOR</button>
+</div>
+
+</div><!-- end #main -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  function ge(id){return document.getElementById(id);}
+  function gv(id){var e=ge(id);return e?e.value.trim():'';}
+
+  /* ── HYBRID DATABASE ── */
+  var HYBRIDS = {
+    /* Power Plus VE */
+    '8J797 VE':{ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Good'}},
+    '1R47 VE': {ear:'flex',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '2A17 VE': {ear:'flex',prod:{h:'Excellent',m:'Excellent',l:'Good'}},
+    '5M76 VE': {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Good'}},
+    '6G88 VE': {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Good'}},
+    '7K299 VE':{ear:'fixed',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    /* Power Plus Q */
+    '1K18 Q':  {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '2W400 Q': {ear:'flex',prod:{h:'Good',m:'Excellent',l:'Excellent'}},
+    '2J67 Q':  {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '5F17 Q':  {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Good'}},
+    /* Power Plus AM */
+    '8J697AM': {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Good'}},
+    '1K12AM':  {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '1U41AM':  {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '4V73AM':  {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Good'}},
+    /* Power Plus Other */
+    '3H48 VE': {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '4P27 VE': {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Good'}},
+    '7R68 VE': {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '2Y10':    {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '4R40':    {ear:'flex',prod:{h:'Excellent',m:'Excellent',l:'Suitable'}},
+    '4W40':    {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '6H80':    {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Suitable'}},
+    '5W86 VE': {ear:'flex',prod:{h:'Good',m:'Excellent',l:'Excellent'}},
+    '5W20':    {ear:'flex',prod:{h:'Good',m:'Excellent',l:'Excellent'}},
+    /* Burrus SSP/PCE */
+    '6U77 SSP':{ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '7T27 SSP':{ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '1R62 PCE':{ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '2A13 PCE':{ear:'flex',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '4W42 PCE':{ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '5C11 PCE':{ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '7B14 PCE':{ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '8C51 PCE':{ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '6L42 PCE':{ear:'flex',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    /* Burrus VT2P/AA */
+    '6N54 VT2P':{ear:'flex',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '7F33 VT2P':{ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '7P71 VT2P':{ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Good'}},
+    '8A12 VT2P':{ear:'flex',prod:{h:'Good',m:'Excellent',l:'Excellent'}},
+    '8K34 VT2P':{ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '6M12 AA':  {ear:'flex',prod:{h:'Excellent',m:'Excellent',l:'Good'}},
+    '7L62 AA':  {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Good'}},
+    '3G31AM':   {ear:'flex',prod:{h:'Excellent',m:'Good',l:'Suitable'}},
+    '5J21AM':   {ear:'flex',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '6Y61 DG VT2P':{ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '7F30':     {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '7K244 PCE':{ear:'fixed',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '6Z72 TRE': {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '7Y23 TRE': {ear:'semi',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}},
+    '6L40':     {ear:'flex',prod:{h:'Excellent',m:'Excellent',l:'Excellent'}}
+  };
+
+  var EAR_NOTES = {
+    flex:'Flex-eared: same total N requirement as fixed (Agronomy Journal 2024). However, flex hybrids are MORE SENSITIVE to N deficit — kernel rows still being set at V5-V7. Side-dress URGENCY is higher and yield at risk per lb N deficit is greater. Act sooner.',
+    semi:'Semi-flex: standard N requirement and timing. Responds to N across most of season. Standard side-dress timing applies.',
+    fixed:'Fixed-ear: same total N requirement (Agronomy Journal 2024). Kernel count set early — yield is MORE STABLE under moderate N stress. Side-dress timing can be slightly later; evaluate ROI carefully after V8.'
+  };
+  // EAR_NMULT removed: ear type does not adjust N rate (Agronomy Journal 2024, Mascagni et al.)
+
+  var TIMING_NOTES = {
+    fall_cold:'Fall cold (<50F soil): lower risk but still subject to winter/spring leaching and denitrification. Nitrification inhibitor strongly recommended.',
+    fall_warm:'Fall warm (>50F soil): HIGH RISK. Rapid nitrification to NO3- before freeze — significant loss likely. Consider spring or split application.',
+    spring:'Spring pre-plant: baseline loss risk. Apply when soil temps below 50F for best retention.',
+    sidedress:'Side-dress only: best N retention timing. Apply by V5-V8 for maximum uptake efficiency.'
+  };
+
+  /* SOM credit: ~22 lbs N per 1% OM, mid-point of each bucket */
+  var SOM_CREDIT = {'1':25,'2':44,'3':66,'4':88,'5':110};
+  var SOM_MID    = {'1':1.0,'2':2.0,'3':3.0,'4':4.0,'5':5.0};
+
+  var MANURE_HINT = {
+    hog_liquid:'Hog liquid: ~65% first-year availability. Adjust for application rate and timing.',
+    cattle_solid:'Cattle solid: ~35% first-year availability. Large second-year carryover.',
+    poultry:'Poultry: ~75% first-year availability. High N density — watch over-application.',
+    custom:'Custom: enter your lab-tested or extension-estimated plant-available N.'
+  };
+
+  // Soy credit: under 45 bpa = 20 lbs, 45+ bpa = 30 lbs
+  var SOY_CREDIT = {'40':20,'50':30};
+
+  var SOURCE_PROFILE = {
+    anhydrous:{d:0.80,l:0.60,v:0.00},
+    urea:     {d:1.00,l:1.00,v:1.00},
+    uan28:    {d:1.00,l:1.00,v:0.85},
+    uan32:    {d:1.00,l:1.00,v:0.85},
+    ams:      {d:1.00,l:0.90,v:0.15},
+    other:    {d:1.00,l:1.00,v:0.80}
+  };
+
+  var TIMING_LOSS = {
+    fall_cold:0.15, fall_warm:0.35, spring:0.00, sidedress:0.00
+  };
+
+  var STAGE_INFO = {
+    v3: {cls:'ok',    msg:'V3-V4: Good window for side-dress. Corn can use band or broadcast. Flex hybrids beginning ear initiation — act now to protect kernel row number.'},
+    v5: {cls:'ok',    msg:'V5-V6: Prime side-dress timing. Maximum N uptake efficiency. Equipment can still navigate rows without significant yield loss.'},
+    v8: {cls:'warn',  msg:'V7-V8: Last ideal timing for side-dress. Fixed-ear hybrids: kernel count largely set — evaluate ROI carefully. Flex hybrids: still in active kernel development. UAN Y-Drop preferred to reduce crop damage.'},
+    v10:{cls:'warn',  msg:'V9-V10: Late application window. N uptake efficiency declining. Fixed-ear hybrids: limited ROI expected. Flex hybrids: some response still possible for kernel fill. Equipment damage risk increasing.'},
+    v12:{cls:'urgent',msg:'V11+: Past economic side-dress window for most situations. Fixed-ear hybrids: do not apply. Flex hybrids in severe deficiency: Y-Drop UAN only if justified by symptoms and price ratio. Significant yield loss may already be locked in.'}
+  };
+
+  var state = {
+    fertSource:'anhydrous', soilTexture:'silt_loam', drainage:'moderate',
+    rainfall:'none', satDays:'0', soilTemp:'cold', growthStage:'v3',
+    symptoms:'none', cropColor:'dark', soyYield:'50',
+    earType:'semi', prodClass:'med', som:'2', tillage:'conv',
+    appTiming:'spring', exposeDays:'0', immob:'10', manureType:'hog_liquid'
+  };
+  var lastR = null;
+
+  /* ── HYBRID SEARCH ── */
+  (function() {
+    var ALL_HYBRIDS = Object.keys(HYBRIDS).map(function(k) {
+      return { key: k, label: (k.indexOf('VE')+k.indexOf('Q')+k.indexOf('AM')+k.indexOf('SSP')+k.indexOf('PCE')+k.indexOf('VT2P')+k.indexOf('AA')+k.indexOf('TRE')>-8 && (k.indexOf('Power')===- 1) ? 'Burrus ' : 'Power Plus ') + k };
+    });
+    // Fix labels using full names from HYBRIDS keys
+    var LABELS = {
+      '8J797 VE':'Power Plus 8J797 VE','1R47 VE':'Power Plus 1R47 VE','2A17 VE':'Power Plus 2A17 VE',
+      '5M76 VE':'Power Plus 5M76 VE','6G88 VE':'Power Plus 6G88 VE','7K299 VE':'Power Plus 7K299 VE',
+      '1K18 Q':'Power Plus 1K18 Q','2W400 Q':'Power Plus 2W400 Q','2J67 Q':'Power Plus 2J67 Q','5F17 Q':'Power Plus 5F17 Q',
+      '8J697AM':'Power Plus 8J697AM','1K12AM':'Power Plus 1K12AM','1U41AM':'Power Plus 1U41AM','4V73AM':'Power Plus 4V73AM',
+      '3H48 VE':'Power Plus 3H48 VE','4P27 VE':'Power Plus 4P27 VE','7R68 VE':'Power Plus 7R68 VE',
+      '2Y10':'Power Plus 2Y10','4R40':'Power Plus 4R40','4W40':'Power Plus 4W40','6H80':'Power Plus 6H80',
+      '5W86 VE':'Power Plus 5W86 VE','5W20':'Power Plus 5W20',
+      '6U77 SSP':'Burrus 6U77 SSP','7T27 SSP':'Burrus 7T27 SSP','1R62 PCE':'Burrus 1R62 PCE',
+      '2A13 PCE':'Burrus 2A13 PCE','4W42 PCE':'Burrus 4W42 PCE','5C11 PCE':'Burrus 5C11 PCE',
+      '7B14 PCE':'Burrus 7B14 PCE','8C51 PCE':'Burrus 8C51 PCE','6L42 PCE':'Burrus 6L42 PCE',
+      '6N54 VT2P':'Burrus 6N54 VT2P','7F33 VT2P':'Burrus 7F33 VT2P','7P71 VT2P':'Burrus 7P71 VT2P',
+      '8A12 VT2P':'Burrus 8A12 VT2P','8K34 VT2P':'Burrus 8K34 VT2P',
+      '6M12 AA':'Burrus 6M12 AA','7L62 AA':'Burrus 7L62 AA','3G31AM':'Burrus 3G31AM','5J21AM':'Burrus 5J21AM',
+      '6Y61 DG VT2P':'Burrus 6Y61 DG VT2P','7F30':'Burrus 7F30','7K244 PCE':'Burrus 7K244 PCE',
+      '6Z72 TRE':'Burrus 6Z72 TRE','7Y23 TRE':'Burrus 7Y23 TRE','6L40':'Burrus 6L40'
+    };
+
+    function getProdClass(yg) {
+      return yg > 240 ? 'high' : yg >= 180 ? 'med' : 'low';
+    }
+
+    function setHybrid(key) {
+      var hd = HYBRIDS[key];
+      if (!hd) return;
+      state.hybridKey = key;
+      state.earType = hd.ear;
+      var badge = ge('hybrid-ear-badge');
+      badge.textContent = hd.ear==='flex'?'FLEX':hd.ear==='fixed'?'FIXED':'SEMI-FLEX';
+      badge.className = 'hybrid-badge '+hd.ear;
+      ge('hybrid-prod-badge').textContent = '';
+      ge('hybrid-n-note').textContent = EAR_NOTES[hd.ear];
+      ge('hybrid-info').style.display = 'block';
+      recalc(false);
+    }
+
+    // Re-evaluate hybrid badge when yield goal changes
+    window._refreshHybridBadge = function() {
+      if (state.hybridKey) setHybrid(state.hybridKey);
+    };
+
+    var searchEl = ge('hybridSearch');
+    var ddEl = ge('hybrid-dropdown');
+    var selectedKey = '';
+
+    searchEl.addEventListener('input', function() {
+      var q = this.value.toLowerCase().trim();
+      ddEl.innerHTML = '';
+      if (!q) { ddEl.style.display='none'; return; }
+      var matches = Object.keys(LABELS).filter(function(k) {
+        return k.toLowerCase().indexOf(q) > -1 || LABELS[k].toLowerCase().indexOf(q) > -1;
+      });
+      if (!matches.length) { ddEl.style.display='none'; return; }
+      matches.slice(0,12).forEach(function(k) {
+        var item = document.createElement('div');
+        item.textContent = LABELS[k];
+        item.style.cssText = 'padding:10px 14px;font-family:"DM Mono",monospace;font-size:11px;cursor:pointer;border-bottom:1px solid #f0e8d8;color:#1c1a16;';
+        item.addEventListener('mousedown', function(e) { e.preventDefault(); });
+        item.addEventListener('click', function() {
+          selectedKey = k;
+          searchEl.value = LABELS[k];
+          ddEl.style.display = 'none';
+          setHybrid(k);
+        });
+        item.addEventListener('mouseover', function() { this.style.background='#f5ede0'; });
+        item.addEventListener('mouseout',  function() { this.style.background=''; });
+        ddEl.appendChild(item);
+      });
+      ddEl.style.display = 'block';
+    });
+
+    searchEl.addEventListener('blur', function() {
+      setTimeout(function() { ddEl.style.display='none'; }, 150);
+    });
+    searchEl.addEventListener('focus', function() {
+      if (this.value.trim()) this.dispatchEvent(new Event('input'));
+    });
+  })();
+
+  /* ── N PRODUCT PRICING ── */
+  var N_PRICE_DEFAULTS = {
+    anhydrous: { ton: 1118, nPct: 0.82, label: 'Anhydrous NH3 ($1,118/ton default)' },
+    urea:      { ton:  865, nPct: 0.46, label: 'Urea 46-0-0 ($865/ton default)' },
+    uan28:     { ton:  530, nPct: 0.28, label: 'UAN 28% ($530/ton default)' },
+    uan32:     { ton:  596, nPct: 0.32, label: 'UAN 32% ($596/ton default)' },
+    an:        { ton:  600, nPct: 0.34, label: 'Ammonium Nitrate 34-0-0 ($600/ton default)' },
+    ams_sd:    { ton:  450, nPct: 0.21, label: 'AMS 21-0-0-24S ($450/ton default)' },
+    ats:       { ton:  380, nPct: 0.12, label: 'Ammonium Thiosulfate 12-0-0-26S ($380/ton default)' }
+  };
+
+  function updateNPricing() {
+    var prod = ge('sdProduct').value;
+    var def = N_PRICE_DEFAULTS[prod] || N_PRICE_DEFAULTS.urea;
+    var ton = parseFloat(ge('nPriceTon').value) || def.ton;
+    // lbs N per ton = 2000 * nPct
+    var lbsNperTon = 2000 * def.nPct;
+    var perLbN = ton / lbsNperTon;
+    ge('nPriceTon-hint').textContent = def.label;
+    ge('nPriceLbN').value = '$' + perLbN.toFixed(3) + '/lb N';
+    return perLbN;
+  }
+
+  function initNPricing(prod) {
+    var def = N_PRICE_DEFAULTS[prod] || N_PRICE_DEFAULTS.urea;
+    ge('nPriceTon').value = def.ton;
+    ge('nPriceTon-hint').textContent = def.label;
+    updateNPricing();
+  }
+
+  var APP_COST_DEFAULTS = {
+    anhydrous: {cost:22, hint:'Anhydrous knife: $18-28/ac typical'},
+    urea:      {cost:12, hint:'Dry spinner/spreader: $8-15/ac typical'},
+    uan28:     {cost:16, hint:'UAN Y-Drop or dribble: $12-20/ac typical'},
+    uan32:     {cost:16, hint:'UAN Y-Drop or dribble: $12-20/ac typical'},
+    an:        {cost:12, hint:'Dry spreader: $8-15/ac typical'},
+    ams_sd:    {cost:12, hint:'Dry spreader: $8-15/ac typical'},
+    ats:       {cost:18, hint:'Liquid applicator (blended): $15-22/ac typical'}
+  };
+
+  function updateAppCostHint(prod) {
+    var def = APP_COST_DEFAULTS[prod]||APP_COST_DEFAULTS.urea;
+    var curVal = parseFloat(ge('appCost').value);
+    /* Only update hint text, not the value — user may have overridden */
+    ge('appCost-hint').textContent = def.hint+'. Adjust for custom hire or owned equipment.';
+  }
+
+  ge('sdProduct').addEventListener('change', function() {
+    initNPricing(this.value);
+    updateAppCostHint(this.value);
+    recalc(false);
+  });
+  ge('nPriceTon').addEventListener('input', function() {
+    updateNPricing();
+    recalc(false);
+  });
+  initNPricing('urea');
+  updateAppCostHint('urea');
+
+  /* ── UAN STABILIZER ROW VISIBILITY ── */
+  function updateUANRow() {
+    var src = state.fertSource;
+    ge('uan-stabilizer-row').style.display = (src==='uan28'||src==='uan32') ? 'block' : 'none';
+  }
+
+  /* ── P CREDIT HINTS ── */
+  function updatePHints() {
+    var m=parseFloat(ge('mapLbs').value)||0;
+    var d=parseFloat(ge('dapLbs').value)||0;
+    var mn=Math.round(m*0.2115), dn=Math.round(d*0.3913);
+    ge('map-hint').textContent=m>0?'-> '+mn+' lbs N/ac (MAP 11-52-0)':'';
+    ge('dap-hint').textContent=d>0?'-> '+dn+' lbs N/ac (DAP 18-46-0)':'';
+    ge('pCreditDisplay').value=(mn+dn)>0?(mn+dn)+' lbs N/ac':'';
+  }
+
+  /* ── STAGE CALLOUT ── */
+  function updateStageCallout() {
+    var si = STAGE_INFO[state.growthStage];
+    if (!si) return;
+    var sc = ge('stage-callout');
+    sc.style.display='block';
+    sc.className='stage-callout '+si.cls;
+    sc.textContent=si.msg;
+  }
+
+  /* ── CALC ── */
+  // Productivity rating multiplier: how well hybrid converts N in this soil class
+  function nRequired(yg, tex, soyCr, immobPenalty, manureN) {
+    var adj={sand:20, sandy_loam:12, loam:0, silt_loam:0, scl:5, clay_loam:-5, sicl:-8, clay:-10};
+    var credits = soyCr + manureN - immobPenalty;
+    var base09 = yg * 0.9 + (adj[tex]||0) - credits;
+    var base08 = yg * 0.8 + (adj[tex]||0) - credits;
+    return {
+      hi:  Math.max(0, Math.round(base09)),
+      lo:  Math.max(0, Math.round(base08)),
+      mid: Math.max(0, Math.round((base09+base08)/2))
+    };
+  }
+
+  function calcLoss(nApp, inhib, uanStab, timingKey) {
+    var s=state, p=SOURCE_PROFILE[s.fertSource]||SOURCE_PROFILE.other;
+    var satDaysRaw=parseFloat(s.satDays)||0;
+    // Research: 2-day lag before soil reaches anaerobic conditions (Purdue 2021, Laboski 2016)
+    var satDays=Math.max(0, satDaysRaw-2);
+    // Published denitrification rates (Hoeft 2002 IL, Laboski WI, Purdue 2021):
+    //   <50F: 0.5-1%/day  50-60F: 2-2.5%/day  61-65F: 4-5%/day  >65F: 4-5%/day
+    var tempF={cold:0.008, cool:0.023, warm:0.045, hot:0.050}[s.soilTemp]||0.023;
+    var drainF={poor:1.4, moderate:1.0, well:0.5}[s.drainage]||1.0;
+    // Texture modifier (heavier soils stay anaerobic longer):
+    var texDenitF={sand:0.4, sandy_loam:0.6, loam:0.9, silt_loam:1.0, scl:1.1, clay_loam:1.2, sicl:1.3, clay:1.4}[s.soilTexture]||1.0;
+    var denitPct=Math.min(0.75, satDays*tempF*drainF*texDenitF*p.d);
+    // Nitrification inhibitor keeps N as NH4+ longer - INDIRECT denitrification reduction
+    // Meta-analysis (ScienceDirect 2021): ~44% reduction in denitrification-related N2O
+    if(inhib) denitPct*=0.56;
+    var rainBase={none:0,light:0.02,moderate:0.05,heavy:0.12,extreme:0.22}[s.rainfall]||0;
+    // Leaching multiplier: 2.0=very high (sand) down to 0.4=very low (clay)
+    var soilL={sand:2.0, sandy_loam:1.4, loam:1.0, silt_loam:0.8, scl:1.1, clay_loam:0.6, sicl:0.5, clay:0.4}[s.soilTexture]||1.0;
+    var leachPct=Math.min(0.50,rainBase*soilL*p.l);
+    if(inhib) leachPct*=0.80;
+
+    /* UAN/Urea volatilization — exposure days add to base rate */
+    var tempV={cold:0.02,cool:0.04,warm:0.08,hot:0.14}[s.soilTemp]||0.04;
+    var rainV={none:1.2,light:0.8,moderate:0.4,heavy:0.2,extreme:0.1}[s.rainfall]||0.8;
+    var exposeAdj={0:0,3:0.03,7:0.07,14:0.12,21:0.18}[s.exposeDays]||0;
+    var volatPct=Math.min(0.40,(tempV*rainV+exposeAdj)*p.v);
+    // NBPT urease inhibitor reduces volatilization 29-81% in published trials
+    // (NCBI 2019: 29-78% reduction; Tennessee UTIA: significant yield improvement)
+    // Using 50% reduction as mid-range of published evidence
+    if(uanStab) volatPct*=0.50;
+
+    /* Fall timing extra loss — inhibitor reduces cold fall loss */
+    var timingLoss=TIMING_LOSS[timingKey]||0;
+    if(timingKey==='fall_cold'&&inhib) timingLoss*=0.50;
+
+    var denit=Math.round(nApp*denitPct);
+    var leach=Math.round(nApp*leachPct);
+    var volat=Math.round(nApp*volatPct);
+    var timingExtra=Math.round(nApp*timingLoss);
+    var inhibSav=inhib?Math.round(nApp*0.08):uanStab?Math.round(nApp*0.04):0;
+    var sAdj={none:1.0,mild:1.05,moderate:1.12,severe:1.25}[s.symptoms]||1.0;
+    var cAdj={dark:0.95,light:1.05,yellow:1.18}[s.cropColor]||1.0;
+    var obs=Math.max(sAdj,cAdj);
+    var pathwayLoss=Math.round((denit+leach+volat)*obs);
+    var totalLoss=Math.round(Math.min(nApp,pathwayLoss+timingExtra));
+    return {denit:denit,leach:leach,volat:volat,timingExtra:timingExtra,
+            inhibSav:inhibSav,totalLoss:totalLoss,remaining:Math.max(0,nApp-totalLoss)};
+  }
+
+  function riskPct(loss,nApp) {
+    if(!nApp) return 0;
+    var sAdj={none:0,mild:5,moderate:12,severe:25}[state.symptoms]||0;
+    return Math.min(100,Math.round((loss.totalLoss/nApp)*100+sAdj));
+  }
+
+  function recalc(show) {
+    show=(show===true);
+    var nPrim=parseFloat(ge('nApplied').value)||0;
+    var yg=parseFloat(ge('yieldGoal').value)||0;
+    var cornP=parseFloat(ge('cornPrice').value)||0;
+    var nCostVal = updateNPricing();
+    var inhib=ge('inhibitor').checked;
+    var uanStab=ge('uanStabilizer').checked;
+    var useP=ge('toggle-pcredit').checked;
+    var useSoy=ge('toggle-soycredit').checked;
+    var useImmob=ge('toggle-immob').checked;
+    var useManure=ge('toggle-manure').checked;
+
+    var pCr=0;
+    if(useP){
+      pCr=Math.round((parseFloat(ge('mapLbs').value)||0)*0.2115
+                    +(parseFloat(ge('dapLbs').value)||0)*0.3913);
+    }
+    var soyCr=useSoy?(SOY_CREDIT[state.soyYield]||40):0;
+    ge('soyCreditDisplay').value=useSoy?soyCr+' lbs N/ac ('+state.soyYield+' bpa)':'';
+
+    var immobPenalty=useImmob?parseInt(state.immob):0;
+    ge('immob-hint').textContent=useImmob?'Adding '+immobPenalty+' lbs N/ac to requirement':'';
+
+    var manureN=useManure?(parseFloat(ge('manureN').value)||0):0;
+
+    /* SOM credit — plant-available in-season fraction only
+       Base rate: conv till=4, min-till=3, no-till=2 lbs N per 1% SOM
+       Reflects ~20-30% of total annual mineralization actually captured by crop
+       during the growing season (UI, Purdue, ISU extension consensus).
+       Full annual mineralization (20-30 lbs/1% SOM) is already implicit
+       in the 0.8-0.9 lbs N/bu base rate for typical Midwest soils. */
+    var somMid=SOM_MID[state.som]||2.0;
+    // Sandy soils mineralize SOM faster (less protection) but have lower OM to start
+    // Clay soils mineralize more slowly — SOM is chemically protected
+    var somTexAdj={sand:2, sandy_loam:1, loam:0, silt_loam:0, scl:0, clay_loam:-1, sicl:-1, clay:-2}[state.soilTexture]||0;
+    var somBaseRate=({conv:4, min:3, notill:2}[state.tillage]||4) + somTexAdj;
+    var somImmobAdj=useImmob?2:0; /* high C:N residue competes for mineralized N */
+    var somEffRate=Math.max(1, somBaseRate-somImmobAdj);
+    var somCredit=Math.round(somMid*somEffRate);
+    var somRateLabel={conv:'conventional till',min:'min/strip-till',notill:'no-till'}[state.tillage]||'conventional';
+    ge('som-hint').textContent='SOM '+somMid+'%: ~'+somCredit+' lbs N/ac ('+somEffRate+' lbs/1% SOM, '+somRateLabel+(useImmob?' -2 adj for high residue':'')+')';
+
+    // EarMult removed from N requirement (not supported: Agronomy J 2024)
+    // earType now only affects yieldAtRisk and side-dress urgency
+    var hybridAdj=0; /* no longer adjusting N requirement by ear type */
+
+    var nTotal=nPrim+pCr;
+    if(!nTotal||!yg) return;
+
+    var loss=calcLoss(nTotal,inhib,uanStab,state.appTiming);
+    var nReqObj=nRequired(yg,state.soilTexture,soyCr,immobPenalty,manureN+somCredit);
+    var nReq=nReqObj.mid; /* use midpoint for side-dress calc */
+    var sdN=Math.max(0,nReq-loss.remaining);
+    var risk=riskPct(loss,nTotal);
+
+    /* Economic calc — includes N product cost AND application cost */
+    var appCostVal = parseFloat(ge('appCost').value)||18;
+    var nProductCost = sdN>0&&nCostVal>0 ? sdN*nCostVal : 0;
+    var sdCost = nProductCost + (sdN>0 ? appCostVal : 0); /* total: product + application */
+    var beYield = sdCost>0&&cornP>0 ? (sdCost/cornP) : 0;
+    /* Expected yield protected: rough estimate based on N deficit and stage */
+    // Stage factor: N efficiency drops sharply after V10 (extension consensus)
+    var stageFactor={v3:0.95,v5:0.90,v8:0.75,v10:0.50,v12:0.20}[state.growthStage]||0.75;
+    // Ear type yield penalty: flex hybrids more sensitive to N deficit because
+    // kernel rows still being determined (Agronomy Journal 2024, AgWeb/Ferrie)
+    // Fixed hybrids: kernel count set early, more stable under N stress
+    var earRiskMult={flex:1.25, semi:1.00, fixed:0.80}[state.earType]||1.00;
+    var yieldAtRisk=sdN>0?Math.round((sdN/1.2)*stageFactor*earRiskMult):0;
+    /* Update total cost display */
+    if(ge('totalSdCost')) ge('totalSdCost').value = sdN>0&&sdCost>0 ? '$'+sdCost.toFixed(2)+'/ac' : '';
+
+    lastR={
+      grower:gv('grower'),field:gv('field'),notes:gv('fieldNotes'),
+      hybrid:gv('hybridSelect'),nPrim:nPrim,pCr:pCr,nTotal:nTotal,
+      yg:yg,nReq:nReq,soyCr:soyCr,immobPenalty:immobPenalty,
+      somCredit:somCredit,somEffRate:somEffRate,tillage:state.tillage,manureN:manureN,hybridAdj:hybridAdj,
+      inhib:inhib,uanStab:uanStab,loss:loss,sdN:sdN,risk:risk,
+      fertSource:state.fertSource,soilTexture:state.soilTexture,
+      drainage:state.drainage,rainfall:state.rainfall,satDays:state.satDays,
+      soilTemp:state.soilTemp,growthStage:state.growthStage,
+      symptoms:state.symptoms,cropColor:state.cropColor,
+      earType:state.earType,som:state.som,
+      appTiming:state.appTiming,exposeDays:state.exposeDays,
+      useP:useP,useSoy:useSoy,useImmob:useImmob,useManure:useManure,
+      sdCost:sdCost,nProductCost:nProductCost,appCostVal:appCostVal,beYield:beYield,yieldAtRisk:yieldAtRisk,
+      cornPrice:cornP,nCost:nCostVal
+    };
+
+    /* Update tiles */
+    ge('r-applied').textContent=nTotal;
+    ge('r-applied-sub').textContent=pCr>0?nPrim+' primary + '+pCr+' MAP/DAP':'';
+    ge('r-lost').textContent=loss.totalLoss;
+    ge('r-remain').textContent=loss.remaining;
+    ge('r-needed').textContent=nReqObj.lo+'-'+nReqObj.hi;
+    var subParts=[];
+    if(soyCr>0) subParts.push('-'+soyCr+' soy');
+    if(somCredit>0) subParts.push('-'+somCredit+' SOM');
+    if(immobPenalty>0) subParts.push('+'+immobPenalty+' immob');
+    subParts.push('0.8-0.9 lbs N/bu');
+    ge('r-needed-sub').textContent=subParts.join(' / ');
+
+    var lp=(loss.totalLoss/nTotal)*100;
+    ge('tile-lost').className='res-tile '+(lp<15?'ok':lp<35?'warn':'bad');
+    ge('r-lost').style.color=lp<15?'var(--green)':lp<35?'var(--amber)':'var(--red)';
+    var rp=loss.remaining/nReq;
+    ge('tile-remain').className='res-tile '+(rp>=0.9?'ok':rp>=0.7?'warn':'bad');
+    ge('tile-needed').className='res-tile '+(sdN===0?'ok':sdN<40?'warn':'bad');
+
+    /* Breakdown rows */
+    var showSom=somCredit>0;
+    ge('bk-row-som').style.display=showSom?'':'none';
+    // Credits: reduce N requirement (shown in gold — good news, reduces what you need)
+    ge('bk-som').textContent=showSom?somCredit+' lbs N/ac (reduces req.)':'';
+    if(ge('bk-som-sub')) ge('bk-som-sub').textContent=showSom?somEffRate+' lbs N per 1% SOM · '+somRateLabel:'';
+    // MAP/DAP: adds to your N budget (green — adds supply)
+    ge('bk-row-pcredit').style.display=pCr>0?'':'none';
+    ge('bk-pcredit').textContent=pCr>0?'+'+pCr+' lbs/ac (adds to budget)':'';
+    // Manure: reduces requirement
+    ge('bk-row-manure').style.display=manureN>0?'':'none';
+    ge('bk-manure').textContent=manureN>0?manureN+' lbs N/ac (reduces req.)':'';
+    // Soybean: reduces requirement
+    ge('bk-row-soycredit').style.display=soyCr>0?'':'none';
+    ge('bk-soycredit').textContent=soyCr>0?soyCr+' lbs N/ac (reduces req.)':'';
+    // Immobilization: increases requirement (amber — penalty)
+    ge('bk-row-immob').style.display=immobPenalty>0?'':'none';
+    ge('bk-immob').textContent=immobPenalty>0?'+'+immobPenalty+' lbs N/ac (adds to req.)':'';
+    // Ear type affects timing urgency only — shown in the ear type note, not as an N adjustment
+    ge('bk-row-hybrid').style.display='none';
+    ge('bk-row-timing').style.display=loss.timingExtra>0?'':'none';
+    ge('bk-timing').textContent=loss.timingExtra>0?'-'+loss.timingExtra+' lbs/ac':'';
+    ge('bk-denit').textContent='-'+loss.denit+' lbs/ac';
+    ge('bk-leach').textContent='-'+loss.leach+' lbs/ac';
+    ge('bk-volat').textContent='-'+loss.volat+' lbs/ac';
+    ge('bk-inhib').textContent=(inhib||uanStab)?'+'+loss.inhibSav+' lbs/ac':'N/A';
+    ge('bk-net').textContent=loss.remaining+' lbs/ac';
+
+    /* Risk bar */
+    var bar=ge('risk-bar'),rl=ge('risk-label');
+    bar.style.width=risk+'%';
+    if(risk<25){bar.style.background='var(--green)';rl.textContent='Low Risk';rl.style.color='var(--green)';}
+    else if(risk<50){bar.style.background='var(--amber)';rl.textContent='Moderate Risk';rl.style.color='var(--amber)';}
+    else if(risk<75){bar.style.background='#e53935';rl.textContent='High Risk';rl.style.color='#e53935';}
+    else{bar.style.background='#7b0000';rl.textContent='Severe Risk';rl.style.color='#7b0000';}
+
+    /* Recommendation */
+    var soyNote=soyCr>0?' (includes '+soyCr+' lb soybean credit)':'';
+    var rec=ge('rec-box'),ri=ge('rec-icon'),rt=ge('rec-title'),rb=ge('rec-body');
+    if(sdN===0){
+      rec.className='rec-box low';ri.className='rec-icon low';ri.textContent='N SUFFICIENT';
+      rt.className='rec-title low';rt.textContent='No Side-Dress Required';
+      rb.textContent='Estimated N remaining ('+loss.remaining+' lbs/ac) meets your '+yg+' bu/ac goal ('+nReq+' lbs/ac required'+soyNote+'). Monitor for visual symptoms. Re-evaluate after any significant rain event.';
+    } else if(sdN<=40){
+      rec.className='rec-box med';ri.className='rec-icon med';ri.textContent='CAUTION';
+      rt.className='rec-title med';rt.textContent='Side-Dress Recommended: '+sdN+' lbs N/ac';
+      rb.textContent='Losses reduced available N to ~'+loss.remaining+' lbs/ac. A supplemental '+sdN+' lbs N/ac is recommended to protect your '+yg+' bu/ac goal'+soyNote+'. Apply by V8-V10 for maximum efficiency.';
+    } else {
+      rec.className='rec-box high';ri.className='rec-icon high';ri.textContent='URGENT';
+      rt.className='rec-title high';rt.textContent='Urgent Side-Dress: '+sdN+' lbs N/ac';
+      rb.textContent='Significant N loss — only ~'+loss.remaining+' lbs/ac remains of '+nTotal+' total N. Side-dress '+sdN+' lbs N/ac immediately'+soyNote+'. Act before V8; split application if rate exceeds 60 lbs/ac.';
+    }
+
+    /* Growth stage callout */
+    var si=STAGE_INFO[state.growthStage];
+    if(si){
+      var src2=ge('stage-result-callout');
+      src2.style.display='block';
+      src2.className='stage-callout '+si.cls;
+      /* Customise for ear type */
+      var earNote=state.earType==='flex'?' Flex ear: prioritize timing — kernel rows still developing.':state.earType==='fixed'?' Fixed ear: evaluate ROI carefully at this stage.':'';
+      src2.textContent=si.msg+earNote;
+    }
+
+    /* Economic box */
+    var eb=ge('econ-box');
+    if(sdN>0&&cornP>0&&nCostVal>0){
+      eb.style.display='block';
+      ge('econ-sdN').textContent=sdN+' lbs N/ac';
+      /* Show cost breakdown: N product + application */
+      ge('econ-cost').textContent='$'+sdCost.toFixed(2)+'/ac  ($'+nProductCost.toFixed(2)+' N + $'+appCostVal.toFixed(2)+' application)';
+      ge('econ-breakeven').textContent=beYield.toFixed(1)+' bu/ac needed';
+      ge('econ-protected').textContent='~'+yieldAtRisk+' bu/ac at risk';
+      var profitable=yieldAtRisk>beYield;
+      ge('econ-breakeven').className='econ-val '+(profitable?'':'warn');
+      var verdict='';
+      if(profitable){
+        verdict='Application is economically justified. Expected yield at risk (~'+yieldAtRisk+' bu/ac) exceeds the '+beYield.toFixed(1)+' bu/ac breakeven at $'+cornP+'/bu corn ($'+nProductCost.toFixed(2)+' N + $'+appCostVal.toFixed(2)+' application = $'+sdCost.toFixed(2)+'/ac total).';
+      } else if(beYield>0){
+        verdict='Marginal economics. Need '+beYield.toFixed(1)+' bu/ac response but only ~'+yieldAtRisk+' bu/ac at risk at this growth stage. Total cost $'+sdCost.toFixed(2)+'/ac includes $'+appCostVal.toFixed(2)+' application. Verify prices and consider hybrid ear type and field symptoms before applying.';
+      }
+      ge('econ-verdict').textContent=verdict;
+    } else {
+      eb.style.display='none';
+    }
+
+    /* Rate table */
+    var rc2=ge('rate-card');
+    if(sdN>0){
+      rc2.style.display='block';
+      var rates=[
+        {name:'Anhydrous NH3 (82-0-0)',    fmt:function(n){return Math.round(n/0.82)+' lbs/ac';}},
+        {name:'Urea (46-0-0)',             fmt:function(n){return Math.round(n/0.46)+' lbs/ac';}},
+        {name:'UAN 28%',                   fmt:function(n){return (n/3.1).toFixed(1)+' gal/ac';}},
+        {name:'UAN 32%',                   fmt:function(n){return (n/3.57).toFixed(1)+' gal/ac';}},
+        {name:'Ammonium Nitrate (34-0-0)', fmt:function(n){return Math.round(n/0.34)+' lbs/ac';}},
+        {name:'AMS (21-0-0-24S)',          fmt:function(n){return Math.round(n/0.21)+' lbs/ac';}},
+        {name:'ATS (12-0-0-26S)',          fmt:function(n){return Math.round(n/0.12)+' lbs/ac  — blend w/ UAN';}}
+      ];
+      ge('rate-rows').innerHTML=rates.map(function(r){
+        return '<div class="bk-row"><div class="bk-name">'+r.name+'</div>'
+              +'<div class="bk-val neutral" style="font-weight:700;">'+r.fmt(sdN)+'</div></div>';
+      }).join('');
+    } else { rc2.style.display='none'; }
+
+    ge('dl-row').style.display='flex';
+    if(show){
+      ge('results-section').style.display='block';
+      setTimeout(function(){ge('results-section').scrollIntoView({behavior:'smooth'});},100);
+    }
+  }
+
+  /* ── CANVAS REPORT ── */
+  var C={dark:'#1c1a16',dbg:'#252018',gold:'#b8972a',goldD:'#8a6f1e',goldL:'#d4b84a',
+         tan:'#f2ece0',panel:'#faf7f0',border:'#d0c49a',muted:'#7a6a4a',
+         white:'#ffffff',red:'#c0392b',green:'#2e7d32',amber:'#e67e22'};
+
+  var LOGO=new Image();LOGO.src='data:image/png;base64,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';var LOGO_READY=false;LOGO.onload=function(){LOGO_READY=true;};
+  var PROF_IMG_OBJ=null;
+  (function(){
+    var ph=localStorage.getItem('u-photo');
+    if(ph){var img=new Image();img.onload=function(){PROF_IMG_OBJ=img;};img.src=ph;}
+    // Pre-populate grower/field from localStorage if inputs are empty
+    document.addEventListener('DOMContentLoaded',function(){
+      var gEl=document.getElementById('grower'),fEl=document.getElementById('field');
+      if(gEl&&!gEl.value){
+        var ln=localStorage.getItem('u-name')||'';
+        // use rep name as default grower hint only if blank
+        // (leave blank; grower is different from rep)
+      }
+    });
+  })();
+  function getRepInfo(){
+    return {
+      name: localStorage.getItem('u-name')||'',
+      title: localStorage.getItem('u-title')||'',
+      phone: localStorage.getItem('u-phone')||'',
+      email: localStorage.getItem('u-email')||''
+    };
+  }
+  function drawAgroBar(ctx,PAD,y,cw){
+    roundRect(ctx,PAD,y,cw,58,5,C.dbg,null);
+    var lr=PAD+16;
+    if(LOGO_READY){var lh=42,lw=Math.round(LOGO.width*(lh/LOGO.height));ctx.drawImage(LOGO,PAD+16,y+8,lw,lh);lr=PAD+16+lw+14;}
+    if(PROF_IMG_OBJ){ctx.save();ctx.beginPath();ctx.arc(lr+21,y+8+21,21,0,Math.PI*2);ctx.clip();ctx.drawImage(PROF_IMG_OBJ,lr,y+8,42,42);ctx.restore();lr+=56;}
+    var rep=getRepInfo();
+    ctx.fillStyle=C.white;ctx.font='700 14px "Source Serif 4",serif';ctx.fillText(rep.name||'Rep',lr,y+20);
+    ctx.fillStyle='#999';ctx.font='10px "DM Mono",monospace';
+    if(rep.title)ctx.fillText(rep.title,lr,y+35);
+    var rc=[rep.phone,rep.email].filter(Boolean).join(' | ');
+    if(rc)ctx.fillText(rc,lr,y+(rep.title?50:35));
+    roundRect(ctx,PAD+cw-72,y+16,68,26,3,null,C.gold,1.5);
+    ctx.fillStyle=C.gold;ctx.font='9px "DM Mono",monospace';ctx.textAlign='center';ctx.fillText('EST. 1935',PAD+cw-38,y+33);ctx.textAlign='left';
+  }
+  function drawFooter(ctx,PAD,W,y,gr,fi,dt){
+    ctx.strokeStyle=C.border;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(PAD,y);ctx.lineTo(W-PAD,y);ctx.stroke();y+=14;
+    ctx.fillStyle=C.muted;ctx.font='8px "DM Mono",monospace';
+    ctx.fillText('CONFIDENTIAL - '+(gr||'GROWER').toUpperCase()+' - '+(fi||'FIELD').toUpperCase()+(dt?' - '+dt.toUpperCase():''),PAD,y);
+    roundRect(ctx,W-PAD-98,y-12,94,20,3,C.dark,null);
+    ctx.fillStyle=C.white;ctx.font='700 8px "DM Mono",monospace';ctx.textAlign='center';ctx.fillText('FIELD VERIFIED',W-PAD-51,y+1);ctx.textAlign='left';
+    return y+24;
+  }
+
+  function roundRect(ctx,x,y,w,h,r,fill,stroke,lw){
+    ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+    ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);
+    ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
+    if(fill){ctx.fillStyle=fill;ctx.fill();}
+    if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1;ctx.stroke();}
+  }
+  function wrapText(ctx,text,x,y,maxW,lineH){
+    var words=text.split(' '),line='',ln=0;
+    for(var i=0;i<words.length;i++){
+      var test=line+words[i]+' ';
+      if(ctx.measureText(test).width>maxW&&line!==''){ctx.fillText(line.trim(),x,y+ln*lineH);ln++;line=words[i]+' ';}
+      else line=test;
+    }
+    if(line.trim()){ctx.fillText(line.trim(),x,y+ln*lineH);ln++;}
+    return ln;
+  }
+  function today(){var d=new Date();return (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();}
+
+  function drawReport(scale){
+    if(!lastR) return null;
+    var r=lastR,W=860,PAD=40,cw=W-PAD*2,sc=scale||1;
+    var riskColor=r.risk<25?C.green:r.risk<50?C.amber:r.risk<75?'#e53935':'#7b0000';
+    var riskLabel=r.risk<25?'LOW RISK':r.risk<50?'MODERATE RISK':r.risk<75?'HIGH RISK':'SEVERE RISK';
+    var recClass=r.sdN===0?'low':r.sdN<=40?'med':'high';
+    var recColor=recClass==='low'?C.green:recClass==='med'?C.amber:C.red;
+    var recBg=recClass==='low'?'#edf7ed':recClass==='med'?'#fff8e1':'#fdecea';
+    var rates=r.sdN>0?[
+      {n:'Anhydrous NH3 (82-0-0)',    v:Math.round(r.sdN/0.82)+' lbs/ac'},
+      {n:'Urea (46-0-0)',             v:Math.round(r.sdN/0.46)+' lbs/ac'},
+      {n:'UAN 28%',                   v:(r.sdN/3.1).toFixed(1)+' gal/ac'},
+      {n:'UAN 32%',                   v:(r.sdN/3.57).toFixed(1)+' gal/ac'},
+      {n:'Ammonium Nitrate (34-0-0)', v:Math.round(r.sdN/0.34)+' lbs/ac'},
+      {n:'AMS (21-0-0-24S)',          v:Math.round(r.sdN/0.21)+' lbs/ac'},
+      {n:'ATS (12-0-0-26S)',          v:Math.round(r.sdN/0.12)+' lbs/ac'}
+    ]:[];
+    var si=STAGE_INFO[r.growthStage]||{cls:'ok',msg:''};
+    var estH=272+80+90+240+180+(r.sdN>0?rates.length*36+80:0)+160+(r.notes?80:0)+(r.sdN>0&&r.cornPrice>0&&r.nCost>0?120:0)+80;
+    var cv=ge('report-canvas');
+    cv.width=W*sc;cv.height=estH*sc;cv.style.width=W+'px';cv.style.height=estH+'px';
+    var ctx=cv.getContext('2d');ctx.scale(sc,sc);
+    ctx.fillStyle=C.tan;ctx.fillRect(0,0,W,estH);
+    var y=PAD;
+    /* Header */
+    ctx.fillStyle=C.muted;ctx.font='10px "DM Mono",monospace';ctx.textAlign='left';ctx.fillText('AGRONOMY FIELD REPORT',PAD,y+10);
+    ctx.fillStyle=C.dark;ctx.font='300 38px "Playfair Display",serif';ctx.fillText('N Loss',PAD,y+52);
+    var sw=ctx.measureText('N Loss').width;
+    ctx.fillStyle=C.gold;ctx.font='900 38px "Playfair Display",serif';ctx.fillText(' Assessment',PAD+sw,y+52);
+    ctx.textAlign='right';
+    ctx.fillStyle=C.muted;ctx.font='10px "DM Mono",monospace';ctx.fillText(today(),W-PAD,y+10);
+    ctx.fillStyle=C.dark;ctx.font='600 16px "Source Serif 4",serif';ctx.fillText(r.grower||'--',W-PAD,y+30);
+    ctx.fillStyle=C.muted;ctx.font='11px "Source Serif 4",serif';ctx.fillText(r.field||'--',W-PAD,y+48);
+    if(r.hybrid){ctx.font='10px "DM Mono",monospace';ctx.fillText(r.hybrid,W-PAD,y+64);}
+    ctx.textAlign='left';y+=68;
+    ctx.strokeStyle=C.gold;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(PAD,y);ctx.lineTo(W-PAD,y);ctx.stroke();y+=16;
+    drawAgroBar(ctx,PAD,y,cw);y+=72;
+    /* Info bar */
+    roundRect(ctx,PAD,y,cw,44,4,C.gold,null);
+    var earLabel=r.earType==='flex'?'FLEX':r.earType==='fixed'?'FIXED':'SEMI-FLEX';
+    var items=[
+      ['Yield Goal',r.yg+' bu/ac'],
+      ['N Applied',r.nTotal+' lbs/ac'],
+      ['Ear Type',earLabel],
+      ['Growth Stage',({v3:'V3-V4',v5:'V5-V6',v8:'V7-V8',v10:'V9-V10',v12:'V11+'}[r.growthStage])||r.growthStage]
+    ];
+    var bx=PAD+14,iw=cw/items.length;
+    items.forEach(function(it){
+      ctx.fillStyle='rgba(255,255,255,0.7)';ctx.font='8px "DM Mono",monospace';ctx.fillText(it[0].toUpperCase(),bx,y+15);
+      ctx.fillStyle=C.white;ctx.font='700 12px "Source Serif 4",serif';ctx.fillText(String(it[1]),bx,y+34);bx+=iw;
+    });
+    y+=58;
+    /* Risk */
+    ctx.fillStyle=C.muted;ctx.font='700 8px "DM Mono",monospace';ctx.fillText('N LOSS RISK ASSESSMENT',PAD,y+10);y+=18;
+    ctx.fillStyle=riskColor;ctx.font='700 26px "Playfair Display",serif';ctx.fillText(riskLabel,PAD,y+26);
+    roundRect(ctx,PAD,y+34,cw,14,7,'#d0c49a',null);
+    roundRect(ctx,PAD,y+34,Math.round(cw*r.risk/100),14,7,riskColor,null);
+    ctx.fillStyle=C.muted;ctx.font='8px "DM Mono",monospace';
+    ctx.fillText('LOW',PAD,y+60);ctx.textAlign='center';ctx.fillText('MODERATE',PAD+cw*0.33,y+60);ctx.fillText('HIGH',PAD+cw*0.66,y+60);
+    ctx.textAlign='right';ctx.fillText('SEVERE',W-PAD,y+60);ctx.textAlign='left';y+=72;
+    /* Tiles */
+    var tw=(cw-30)/4;
+    [{lbl:'TOTAL N BUDGET',val:r.nTotal,unit:'lbs/ac',dark:true},
+     {lbl:'EST. N LOST',val:r.loss.totalLoss,unit:'lbs/ac',vc:r.loss.totalLoss/r.nTotal<0.15?C.green:r.loss.totalLoss/r.nTotal<0.35?C.amber:C.red},
+     {lbl:'N REMAINING',val:r.loss.remaining,unit:'lbs/ac'},
+     {lbl:'N REQUIRED',val:r.nReq,unit:'lbs/ac',sub:r.somCredit>0?'-'+r.somCredit+' SOM':''}
+    ].forEach(function(t,i){
+      var tx=PAD+i*(tw+10);
+      roundRect(ctx,tx,y,tw,72,6,t.dark?C.dbg:C.panel,t.dark?C.gold:C.border,t.dark?2:1);
+      ctx.fillStyle=t.dark?'rgba(184,151,42,0.6)':C.muted;ctx.font='7px "DM Mono",monospace';ctx.fillText(t.lbl,tx+10,y+16);
+      ctx.fillStyle=t.vc||(t.dark?C.goldL:C.dark);ctx.font='700 24px "Playfair Display",serif';ctx.fillText(String(t.val),tx+10,y+46);
+      ctx.fillStyle=t.dark?'rgba(184,151,42,0.5)':C.muted;ctx.font='8px "DM Mono",monospace';ctx.fillText(t.unit+(t.sub?' '+t.sub:''),tx+10,y+62);
+    });
+    y+=84;
+    /* Breakdown */
+    ctx.fillStyle=C.muted;ctx.font='700 8px "DM Mono",monospace';ctx.fillText('N BUDGET BREAKDOWN',PAD,y+10);y+=18;
+    var brows=[
+      // Credits that reduce requirement — gold color
+      r.somCredit>0?{n:'SOM Mineralization ('+r.somEffRate+' lbs/1% SOM)',v:r.somCredit+' lbs N/ac (reduces req.)',c:C.goldD}:null,
+      // MAP/DAP adds to N budget — green
+      r.pCr>0?{n:'MAP/DAP N Credit',v:'+'+r.pCr+' lbs/ac (adds to budget)',c:C.green}:null,
+      // Credits reducing requirement — gold
+      r.manureN>0?{n:'Manure N Credit',v:r.manureN+' lbs N/ac (reduces req.)',c:C.goldD}:null,
+      r.soyCr>0?{n:'Soybean N Credit',v:r.soyCr+' lbs N/ac (reduces req.)',c:C.goldD}:null,
+      // Immob adds to requirement — amber
+      r.immobPenalty>0?{n:'Immobilization Penalty',v:'+'+r.immobPenalty+' lbs N/ac (adds to req.)',c:C.amber}:null,
+      // Hybrid adj — amber if adds, gold if reduces
+      // True losses from budget — red
+      r.loss.timingExtra>0?{n:'Fall Timing N Loss',v:'-'+r.loss.timingExtra+' lbs/ac',c:C.red}:null,
+      {n:'Denitrification',v:'-'+r.loss.denit+' lbs/ac',c:C.red},
+      {n:'Leaching',v:'-'+r.loss.leach+' lbs/ac',c:C.red},
+      {n:'Volatilization'+(r.uanStab?' (stabilizer)':''),v:'-'+r.loss.volat+' lbs/ac',c:C.red},
+      (r.inhib||r.uanStab)?{n:'Inhibitor/Stabilizer Savings',v:'+'+r.loss.inhibSav+' lbs/ac',c:C.green}:null
+    ].filter(Boolean);
+    brows.forEach(function(row){
+      roundRect(ctx,PAD,y,cw,32,3,C.panel,C.border,1);
+      ctx.fillStyle=C.dark;ctx.font='12px "Source Serif 4",serif';ctx.fillText(row.n,PAD+12,y+21);
+      ctx.fillStyle=row.c;ctx.font='700 12px "DM Mono",monospace';ctx.textAlign='right';ctx.fillText(row.v,W-PAD-12,y+21);ctx.textAlign='left';y+=34;
+    });
+    roundRect(ctx,PAD,y,cw,36,3,'#f5ede0',C.gold,1.5);
+    ctx.fillStyle=C.goldD;ctx.font='700 13px "Source Serif 4",serif';ctx.fillText('Net N Available to Crop',PAD+12,y+23);
+    ctx.textAlign='right';ctx.font='700 16px "DM Mono",monospace';ctx.fillText(r.loss.remaining+' lbs/ac',W-PAD-12,y+23);ctx.textAlign='left';y+=48;
+    /* Rec box */
+    var recH=recClass==='high'?100:88;
+    roundRect(ctx,PAD,y,cw,recH,6,recBg,recColor,1.5);
+    ctx.fillStyle=recColor;ctx.font='700 7px "DM Mono",monospace';
+    ctx.fillText(recClass==='low'?'N SUFFICIENT':recClass==='med'?'CAUTION':'URGENT ACTION REQUIRED',PAD+14,y+16);
+    ctx.fillStyle=C.dark;ctx.font='700 15px "Playfair Display",serif';
+    ctx.fillText(r.sdN===0?'No Side-Dress Required':recClass==='med'?'Side-Dress Recommended: '+r.sdN+' lbs N/ac':'Urgent Side-Dress Required: '+r.sdN+' lbs N/ac',PAD+14,y+34);
+    ctx.fillStyle='#333';ctx.font='10px "DM Mono",monospace';
+    wrapText(ctx,ge('rec-body').textContent,PAD+14,y+50,cw-28,14);y+=recH+12;
+    /* Stage callout */
+    var stageColor=si.cls==='ok'?C.green:si.cls==='warn'?C.amber:C.red;
+    var stageBg=si.cls==='ok'?'#edf7ed':si.cls==='warn'?'#fff8e1':'#fdecea';
+    roundRect(ctx,PAD,y,cw,48,6,stageBg,stageColor,1.5);
+    ctx.fillStyle=stageColor;ctx.font='700 7px "DM Mono",monospace';ctx.fillText('GROWTH STAGE ASSESSMENT',PAD+14,y+14);
+    ctx.fillStyle='#333';ctx.font='10px "DM Mono",monospace';
+    wrapText(ctx,si.msg,PAD+14,y+28,cw-28,14);y+=60;
+    /* Rate table */
+    if(rates.length){
+      ctx.fillStyle=C.muted;ctx.font='700 8px "DM Mono",monospace';ctx.fillText('SIDE-DRESS RATES BY PRODUCT',PAD,y+10);y+=18;
+      roundRect(ctx,PAD,y,cw,28,3,C.dbg,null);
+      ctx.fillStyle=C.gold;ctx.font='700 8px "DM Mono",monospace';ctx.fillText('PRODUCT',PAD+12,y+18);
+      ctx.textAlign='right';ctx.fillText('RATE NEEDED',W-PAD-12,y+18);ctx.textAlign='left';y+=28;
+      rates.forEach(function(r2,i){
+        roundRect(ctx,PAD,y,cw,32,0,i%2===0?C.panel:'#f5f0e8',C.border,0.5);
+        ctx.fillStyle=C.dark;ctx.font='12px "Source Serif 4",serif';ctx.fillText(r2.n,PAD+12,y+21);
+        ctx.textAlign='right';ctx.font='700 12px "DM Mono",monospace';ctx.fillText(r2.v,W-PAD-12,y+21);ctx.textAlign='left';y+=32;
+      });y+=12;
+    }
+    /* Econ */
+    if(r.sdN>0&&r.cornPrice>0&&r.nCost>0){
+      roundRect(ctx,PAD,y,cw,106,6,'#1a2218','#2e7d32',1.5);
+      ctx.fillStyle='#81c784';ctx.font='700 7px "DM Mono",monospace';ctx.fillText('ECONOMIC BREAKEVEN ANALYSIS',PAD+14,y+14);
+      ctx.fillStyle=C.white;ctx.font='10px "DM Mono",monospace';
+      ctx.fillText('N product cost: $'+(r.nProductCost||0).toFixed(2)+'/ac  |  Application cost: $'+(r.appCostVal||18).toFixed(2)+'/ac',PAD+14,y+30);
+      ctx.fillText('Total side-dress cost: $'+r.sdCost.toFixed(2)+'/ac  |  Corn: $'+r.cornPrice+'/bu',PAD+14,y+46);
+      ctx.fillText('Breakeven yield response: '+r.beYield.toFixed(1)+' bu/ac  |  Yield at risk: ~'+r.yieldAtRisk+' bu/ac',PAD+14,y+62);
+      var evText=r.yieldAtRisk>r.beYield?'Economically justified — expected response exceeds breakeven.':'Marginal — verify prices, growth stage, and symptoms before applying.';
+      ctx.fillStyle=r.yieldAtRisk>r.beYield?'#a5d6a7':'#ffcc80';ctx.font='700 10px "DM Mono",monospace';
+      ctx.fillText(evText,PAD+14,y+82);y+=118;
+    }
+    /* Conditions */
+    ctx.fillStyle=C.muted;ctx.font='700 8px "DM Mono",monospace';ctx.fillText('FIELD CONDITIONS RECORDED',PAD,y+10);y+=18;
+    var conds=[
+      ['Fertilizer Source',({anhydrous:'Anhydrous NH3',urea:'Urea (46-0-0)',uan28:'UAN 28%',uan32:'UAN 32%',ams:'AMS (21-0-0-24S)',other:'Other'}[r.fertSource])||r.fertSource],
+      ['Inhibitor/Stabilizer',(r.inhib?'Inhibitor':'')+(r.uanStab?'+UAN Stab':'')|| 'None'],
+      ['App. Timing',({fall_cold:'Fall Cold (<50F)',fall_warm:'Fall Warm (>50F)',spring:'Spring Pre-Plant',sidedress:'Side-Dress Only'}[r.appTiming])||r.appTiming],
+      ['Ear Type',({flex:'Flex (higher N loss sensitivity)',semi:'Semi-Flex',fixed:'Fixed'}[r.earType])||r.earType],
+      ['Excess Rainfall',({none:'None',light:'1-2 in',moderate:'3-4 in',heavy:'5-6 in',extreme:'7+ in'}[r.rainfall])||r.rainfall],
+      ['Days Saturated',({0:'0',3:'1-3',7:'4-7',14:'8-14',21:'15+'}[r.satDays])||r.satDays],
+      ['Soil Temp',({cold:'Under 50F',cool:'50-60F',warm:'61-70F',hot:'Over 70F'}[r.soilTemp])||r.soilTemp],
+      ['Tillage',({conv:'Conventional',min:'Min/Strip-Till',notill:'No-Till'}[r.tillage])||r.tillage],
+      ['SOM Rate',r.somEffRate+' lbs N/1% SOM ('+({conv:'conv',min:'min-till',notill:'no-till'}[r.tillage])+')'],
+      ['Soil OM',({1:'Under 1.5%',2:'1.5-2.5%',3:'2.5-3.5%',4:'3.5-4.5%',5:'Over 4.5%'}[r.som])||r.som],
+      ['Symptoms',({none:'None',mild:'Mild',moderate:'Moderate',severe:'Severe'}[r.symptoms])||r.symptoms]
+    ];
+    var cw2=(cw-10)/2;
+    conds.forEach(function(c,i){
+      var tx2=i%2===0?PAD:PAD+cw2+10,ry=y+Math.floor(i/2)*28;
+      roundRect(ctx,tx2,ry,cw2,24,3,C.panel,C.border,1);
+      ctx.fillStyle=C.muted;ctx.font='7px "DM Mono",monospace';ctx.fillText(c[0].toUpperCase(),tx2+8,ry+11);
+      ctx.fillStyle=C.dark;ctx.font='700 10px "DM Mono",monospace';ctx.fillText(c[1],tx2+8,ry+21);
+    });
+    y+=Math.ceil(conds.length/2)*28+12;
+    if(r.notes){
+      roundRect(ctx,PAD,y,cw,60,6,C.panel,C.border,1);
+      ctx.fillStyle=C.muted;ctx.font='700 7px "DM Mono",monospace';ctx.fillText('FIELD NOTES',PAD+12,y+14);
+      ctx.fillStyle=C.dark;ctx.font='11px "Source Serif 4",serif';
+      wrapText(ctx,r.notes,PAD+12,y+30,cw-24,14);y+=72;
+    }
+    /* Footer */
+    drawFooter(ctx,PAD,W,y,r.grower,r.field,today());
+    return cv;
+  }
+
+  /* ── DOWNLOAD / SHARE ── */
+  function downloadCanvas(cv,name){
+    cv.toBlob(function(blob){
+      if(!blob){fallbackOpen(cv);return;}
+      if(navigator.share&&navigator.canShare){
+        var f=new File([blob],name,{type:'image/jpeg'});
+        if(navigator.canShare({files:[f]})){
+          navigator.share({files:[f],title:'N Loss Report'})
+            .then(function(){toast('Shared!');})
+            .catch(function(e){if(e.name!=='AbortError') blobDL(blob,name);});
+          return;
+        }
+      }
+      blobDL(blob,name);
+    },'image/jpeg',0.92);
+  }
+  function blobDL(blob,fname){
+    try{
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a');a.href=url;a.download=fname;
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      setTimeout(function(){URL.revokeObjectURL(url);},2000);
+      toast('Downloaded!');
+    }catch(e){fallbackOpen(null,blob);}
+  }
+  function fallbackOpen(cv,blob){
+    var open=function(src){
+      var w=window.open('','_blank');
+      if(!w){toast('Allow pop-ups or take a screenshot');return;}
+      w.document.write('<html><head><meta charset=UTF-8><meta name=viewport content=width=device-width,initial-scale=1><style>body{margin:0;background:#1c1a16;display:flex;flex-direction:column;align-items:center;padding:16px}.msg{font-family:monospace;font-size:12px;color:#b8972a;padding:12px;background:rgba(184,151,42,0.1);border:1px solid rgba(184,151,42,0.3);border-radius:8px;margin-bottom:14px;text-align:center}img{max-width:100%;border-radius:6px}</style></head><body><div class=msg>Press and hold image then Save to Photos</div><img src="'+src+'"></body></html>');
+      w.document.close();toast('Long-press image to save');
+    };
+    if(blob){var rd=new FileReader();rd.onload=function(e){open(e.target.result);};rd.readAsDataURL(blob);}
+    else if(cv){open(cv.toDataURL('image/jpeg',0.92));}
+    else toast('Save failed - take a screenshot');
+  }
+  function toast(msg){
+    var t=document.createElement('div');
+    t.textContent=msg;
+    t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#252018;color:#d4b84a;font-family:"DM Mono",monospace;font-size:11px;padding:10px 18px;border-radius:20px;border:1px solid #b8972a;z-index:9999;pointer-events:none;';
+    document.body.appendChild(t);
+    setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .4s';setTimeout(function(){t.remove();},400);},1800);
+  }
+  function resetCalc(){
+    ge('results-section').style.display='none';
+    ge('canvas-wrap').style.display='none';
+    ge('dl-row').style.display='none';
+    ['nApplied','yieldGoal','cornPrice','appCost','mapLbs','dapLbs',
+     'pCreditDisplay','soyCreditDisplay','fieldNotes','manureN'].forEach(function(id){
+      var el=ge(id);if(el) el.value='';
+    });
+    ['map-hint','dap-hint','immob-hint'].forEach(function(id){ge(id).textContent='';});
+    ['toggle-pcredit','toggle-soycredit','toggle-immob','toggle-manure','inhibitor','uanStabilizer'].forEach(function(id){
+      var el=ge(id);if(el) el.checked=false;
+    });
+    ['panel-pcredit','panel-soycredit','panel-immob','panel-manure'].forEach(function(id){
+      ge(id).classList.remove('open');
+    });
+    ge('hybrid-info').style.display='none';
+    ge('hybridSelect').value='';
+    ge('stage-callout').style.display='none';
+    lastR=null;
+    ge('main').scrollTo({top:0,behavior:'smooth'});
+  }
+
+  /* ── WIRE SEG GROUPS ── */
+  var segGroups=[
+    {id:'seg-fertSource',  key:'fertSource'},
+    {id:'seg-soilTexture', key:'soilTexture'},
+    {id:'seg-drainage',    key:'drainage'},
+    {id:'seg-rainfall',    key:'rainfall'},
+    {id:'seg-satDays',     key:'satDays'},
+    {id:'seg-soilTemp',    key:'soilTemp'},
+    {id:'seg-exposeDays',  key:'exposeDays'},
+    {id:'seg-growthStage', key:'growthStage'},
+    {id:'seg-symptoms',    key:'symptoms'},
+    {id:'seg-cropColor',   key:'cropColor'},
+    {id:'seg-soyyield',    key:'soyYield'},
+
+    {id:'seg-som',         key:'som'},
+    {id:'seg-appTiming',   key:'appTiming'},
+    {id:'seg-immob',       key:'immob'},
+    {id:'seg-manureType',  key:'manureType'},
+    {id:'seg-tillage',     key:'tillage'}
+  ];
+  segGroups.forEach(function(grp){
+    var el=ge(grp.id);if(!el) return;
+    el.addEventListener('click',function(e){
+      var btn=e.target.closest('.seg-btn');if(!btn) return;
+      el.querySelectorAll('.seg-btn').forEach(function(b){b.classList.remove('on','green-on');});
+      btn.classList.add('on');
+      state[grp.key]=btn.dataset.val;
+      if(grp.key==='fertSource'){
+        ge('fert-note').textContent=({
+          anhydrous:'Anhydrous NH3: stays as NH4+ longer - lower early leaching and denitrification risk.',
+          urea:'Urea (46-0-0): high volatilization risk if surface-applied without rain or incorporation.',
+          uan28:'UAN 28%: 3.1 lbs N/gal. Surface volatilization risk — use stabilizer or incorporate.',
+          uan32:'UAN 32%: 3.57 lbs N/gal. Surface volatilization risk — use stabilizer or incorporate.',
+          ams:'AMS (21-0-0-24S): acidifying, low volatilization risk. Good sulfur source.',
+          other:'Other/Blend: enter total actual N applied. Loss rates use average assumptions.'
+        }[btn.dataset.val])||'';
+        updateUANRow();
+      }
+      if(grp.key==='appTiming') ge('timing-note').innerHTML=TIMING_NOTES[btn.dataset.val]||'';
+
+      if(grp.key==='som') recalc(false); /* recalc updates som-hint with full context */
+      if(grp.key==='tillage'){
+        var tillHints={conv:'Conventional till: ~4 lbs plant-available N per 1% SOM (in-season fraction)',min:'Min/strip-till: ~3 lbs plant-available N per 1% SOM',notill:'No-till: ~2 lbs plant-available N per 1% SOM — slower mineralization'};
+        ge('tillage-hint').textContent=tillHints[btn.dataset.val]||'';
+      }
+      if(grp.key==='manureType') ge('manure-hint').textContent=MANURE_HINT[btn.dataset.val]||'';
+      if(grp.key==='soilTexture'){
+        var texHints={
+          sand:      'Sand / Loamy Sand: very high leaching (2.0x), low denitrification (0.4x). Nitrate moves quickly below root zone. +20 lbs N req.',
+          sandy_loam:'Sandy Loam: high leaching (1.4x), low denitrification (0.6x). Rapid nitrate movement after rain. +12 lbs N req.',
+          loam:      'Loam: balanced. Moderate leaching (1.0x), moderate denitrification (0.9x). No N req adjustment.',
+          silt_loam: 'Silt Loam: baseline. Moderate leaching (0.8x), baseline denitrification (1.0x). Most common Midwest corn soil.',
+          scl:       'Sandy Clay Loam: moderate leaching (1.1x) and denitrification (1.1x). Common transition zone texture. +5 lbs N req.',
+          clay_loam: 'Clay Loam: lower leaching (0.6x), higher denitrification (1.2x). Good structure but holds water after rain. -5 lbs N req.',
+          sicl:      'Silty Clay Loam: low leaching (0.5x), high denitrification (1.3x). Very common in Corn Belt — high N loss risk when saturated. -8 lbs N req.',
+          clay:      'Clay / Silty Clay: very low leaching (0.4x), highest denitrification (1.4x). Slow drainage, severe N loss under saturation. -10 lbs N req.'
+        };
+        var th=ge('texture-hint');
+        if(th) th.textContent=texHints[btn.dataset.val]||'';
+      }
+      if(grp.key==='soyyield'&&ge('toggle-soycredit').checked) ge('soyCreditDisplay').value=(SOY_CREDIT[btn.dataset.val]||20)+' lbs N/ac';
+      if(grp.key==='growthStage') updateStageCallout();
+      if(grp.key==='immob') ge('immob-hint').textContent=ge('toggle-immob').checked?'Adding '+btn.dataset.val+' lbs N/ac to requirement':'';
+      recalc(false);
+    });
+  });
+
+  /* ── WIRE TOGGLES ── */
+  function wireToggle(checkId,panelId){
+    var chk=ge(checkId),panel=ge(panelId);
+    if(!chk||!panel) return;
+    chk.addEventListener('change',function(){panel.classList.toggle('open',chk.checked);recalc(false);});
+  }
+  wireToggle('toggle-pcredit','panel-pcredit');
+  wireToggle('toggle-soycredit','panel-soycredit');
+  wireToggle('toggle-immob','panel-immob');
+  wireToggle('toggle-manure','panel-manure');
+  ge('inhibitor').addEventListener('change',function(){recalc(false);});
+  ge('uanStabilizer').addEventListener('change',function(){recalc(false);});
+
+  /* ── WIRE INPUTS ── */
+  ['nApplied','yieldGoal','cornPrice','appCost','grower','field','fieldNotes','manureN'].forEach(function(id){
+    // yieldGoal change also refreshes hybrid productivity badge
+    if(id==='yieldGoal'){ var _orig=ge(id); if(_orig) _orig.addEventListener('input', function(){ if(window._refreshHybridBadge) window._refreshHybridBadge(); }); }
+    var el=ge(id);if(!el) return;
+    var evt=el.tagName==='SELECT'?'change':'input';
+    el.addEventListener(evt,function(){recalc(false);});
+  });
+  ['mapLbs','dapLbs'].forEach(function(id){
+    var el=ge(id);if(!el) return;
+    el.addEventListener('input',function(){updatePHints();recalc(false);});
+  });
+
+  /* ── WIRE BUTTONS ── */
+  function wireBtn(id,fn){var el=ge(id);if(el) el.addEventListener('click',fn);}
+  wireBtn('calc-btn',function(){recalc(true);});
+  wireBtn('reset-btn',resetCalc);
+  wireBtn('preview-btn',function(){
+    if(!lastR) return;
+    toast('Building report...');
+    setTimeout(function(){
+      drawReport(1);
+      var cw=ge('canvas-wrap');
+      if(cw){cw.style.display='block';cw.scrollIntoView({behavior:'smooth'});}
+    },80);
+  });
+  wireBtn('dl-btn',function(){
+    if(!lastR) return;
+    toast('Rendering...');
+    setTimeout(function(){
+      try{
+        var cv=drawReport(2);
+        var fname='n-loss-'+(lastR.grower||'report').replace(/\s+/g,'-').toLowerCase()
+                  +'-'+(lastR.field||'field').replace(/\s+/g,'-').toLowerCase()+'.jpg';
+        downloadCanvas(cv,fname);
+      }catch(e){toast('Error: '+e.message);}
+    },150);
+  });
+
+  /* init */
+  updateStageCallout();
+  updateUANRow();
+
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>
