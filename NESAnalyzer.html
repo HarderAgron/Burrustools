@@ -412,7 +412,7 @@ function showScreen(s){
   var T={home:'Field Tools',profile:'User Profile',sc:'Stand Count',nes:'NES + Yield Analyzer',sst:'Seed Spacing',gsr:'General Scouting',dis:'Disease Scout'};
   ge('tb-title').textContent=T[s]||'Field Tools';
 }
-function goHome(){showScreen('home');}
+function goHome(){window.location.href='index.html';}
 function disIframeCall(fn){
   try{
     var iframe=ge('dis-iframe');
