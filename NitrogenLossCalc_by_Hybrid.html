@@ -1064,7 +1064,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     lastR={
       grower:gv('grower'),field:gv('field'),notes:gv('fieldNotes'),
-      hybrid:gv('hybridSelect'),nPrim:nPrim,pCr:pCr,nTotal:nTotal,
+      hybrid:gv('hybridSearch'),nPrim:nPrim,pCr:pCr,nTotal:nTotal,
       yg:yg,nReq:nReq,soyCr:soyCr,immobPenalty:immobPenalty,
       somCredit:somCredit,somEffRate:somEffRate,tillage:state.tillage,manureN:manureN,hybridAdj:hybridAdj,
       inhib:inhib,uanStab:uanStab,loss:loss,sdN:sdN,risk:risk,
@@ -1516,7 +1516,7 @@ document.addEventListener('DOMContentLoaded', function() {
       ge(id).classList.remove('open');
     });
     ge('hybrid-info').style.display='none';
-    ge('hybridSelect').value='';
+    ge('hybridSearch').value='';
     ge('stage-callout').style.display='none';
     lastR=null;
     ge('main').scrollTo({top:0,behavior:'smooth'});
