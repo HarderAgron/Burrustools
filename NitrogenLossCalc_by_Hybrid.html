@@ -630,16 +630,15 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
 </div><!-- end #main -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Load profile photo from localStorage (shared with main app)
-  var ph = localStorage.getItem('u-photo');
-  if(ph){
-    var btn = document.getElementById('tb-avatar');
-    if(btn){
-      var img = document.createElement('img');
-      img.src = ph;
-      btn.innerHTML = '';
-      btn.appendChild(img);
-    }
+  // Load profile photo from localStorage
+  var _avPh = localStorage.getItem('u-photo');
+  if(_avPh){
+    var _avBtn = document.getElementById('tb-avatar');
+    var _avImg = document.createElement('img');
+    _avImg.setAttribute('src', _avPh);
+    _avImg.setAttribute('style', 'width:100%;height:100%;object-fit:cover;border-radius:50%;');
+    _avBtn.innerHTML = '';
+    _avBtn.appendChild(_avImg);
   }
   function ge(id){return document.getElementById(id);}
   function gv(id){var e=ge(id);return e?e.value.trim():'';}
@@ -1207,8 +1206,8 @@ document.addEventListener('DOMContentLoaded', function() {
         {name:'ATS (12-0-0-26S)',          fmt:function(n){return Math.round(n/0.12)+' lbs/ac  — blend w/ UAN';}}
       ];
       ge('rate-rows').innerHTML=rates.map(function(r){
-        return '<div class="bk-row"><div class="bk-name">'+r.name+'</div>'
-              +'<div class="bk-val neutral" style="font-weight:700;">'+r.fmt(sdN)+'</div></div>';
+        return '<div class="bk-row"><div class="bk-name">'+r.name+'<\/div>'
+              +'<div class="bk-val neutral" style="font-weight:700;">'+r.fmt(sdN)+'<\/div><\/div>';
       }).join('');
     } else { rc2.style.display='none'; }
 
@@ -1496,7 +1495,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if(!w){toast('Allow pop-ups or take a screenshot');return;}
       w.document.write('<html><head><meta charset=UTF-8><meta name=viewport content=width=device-width,initial-scale=1><style>body{margin:0;background:#1c1a16;display:flex;flex-direction:column;align-items:center;padding:16px}.msg{font-family:monospace;font-size:12px;color:#b8972a;padding:12px;background:rgba(184,151,42,0.1);border:1px solid rgba(184,151,42,0.3);border-radius:8px;margin-bottom:14px;text-align:center}img{max-width:100%;border-radius:6px}#tb-avatar{width:36px;height:36px;border-radius:50%;background:var(--gold);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;overflow:hidden;}
 #tb-avatar img{width:100%;height:100%;object-fit:cover;}
-</style></head><body><div class=msg>Press and hold image then Save to Photos</div><img src="'+src+'"></body></html>');
+<\/style><\/head><body><div class=msg>Press and hold image then Save to Photos<\/div><img src="'+src+'"><\/body><\/html>');
       w.document.close();toast('Long-press image to save');
     };
     if(blob){var rd=new FileReader();rd.onload=function(e){open(e.target.result);};rd.readAsDataURL(blob);}
