@@ -130,66 +130,6 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
 #prof-photo-input{display:none;}
 #scr-sc{background:#ddd6c4;}
 .sc-wrap{padding:14px 12px 80px;}
-#scr-nes{background:#ddd6c4;}
-.nes-wrap{padding:14px 12px 80px;}
-.nes-sub{display:none;}
-.nes-sub.on{display:block;}
-.nes-scard{background:rgba(28,16,6,0.06);border:1.5px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;}
-.nes-scard-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(0,0,0,0.05);border-bottom:1px solid var(--border);}
-.nes-sbadge{width:30px;height:30px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:"DM Mono",monospace;font-weight:700;font-size:12px;color:var(--dbg);flex-shrink:0;}
-.nes-scard-body{padding:14px;}
-.plant-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
-.ptile{border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;}
-.ptile-name{font-family:"DM Mono",monospace;font-size:10px;font-weight:700;}
-.ptile-sub{font-family:"DM Mono",monospace;font-size:8px;color:rgba(0,0,0,0.35);margin-top:2px;}
-.ctr-wrap{display:flex;align-items:center;gap:6px;}
-.ctr-btn{width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;border:1.5px solid;flex-shrink:0;cursor:pointer;}
-.ctr-btn:disabled{opacity:0.3;}
-.ctr-inp{width:46px;height:32px;background:rgba(0,0,0,0.06);border:1.5px solid;border-radius:6px;text-align:center;font-family:"DM Mono",monospace;font-size:16px;font-weight:700;color:inherit;padding:0 2px;-moz-appearance:textfield;-webkit-appearance:none;}
-.ctr-inp::-webkit-outer-spin-button,.ctr-inp::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
-.nes-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px;}
-.nes-stile{text-align:center;border-radius:7px;padding:10px 6px;border:1.5px solid;}
-.nes-stile-lbl{font-family:"DM Mono",monospace;font-size:8px;letter-spacing:1px;color:var(--muted);}
-.nes-stile-val{font-family:"Playfair Display",serif;font-size:22px;font-weight:700;margin-top:4px;}
-.nes-live{background:var(--panel);border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;}
-.nes-live-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
-.nes-lc-lbl{font-family:"DM Mono",monospace;font-size:8px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
-.nes-lc-val{font-family:"Playfair Display",serif;font-size:22px;line-height:1.1;margin-top:2px;}
-.nes-lc-sub{font-family:"DM Mono",monospace;font-size:8px;color:var(--muted);margin-top:2px;}
-.nes-bar-track{background:rgba(184,151,42,0.15);border-radius:4px;height:7px;overflow:hidden;}
-.nes-bar-fill{height:100%;background:var(--gold);border-radius:4px;transition:width 0.3s;}
-.nes-bar-lbl{font-family:"DM Mono",monospace;font-size:8px;color:var(--muted);margin-top:4px;text-align:center;letter-spacing:1px;}
-.hybrid-box{background:rgba(200,140,60,0.06);border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;}
-.hybrid-list{max-height:160px;overflow-y:auto;border-radius:6px;border:1px solid var(--border);margin-top:8px;}
-.hybrid-row{padding:9px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
-.hybrid-row:last-child{border-bottom:none;}
-.hybrid-row.on{background:rgba(184,151,42,0.12);}
-.hybrid-row span:first-child{font-size:12px;color:var(--dark);}
-.hybrid-row span:last-child{font-size:10px;color:var(--gold);margin-left:8px;white-space:nowrap;}
-.hybrid-selected{margin-top:8px;padding:7px 12px;background:rgba(184,151,42,0.08);border:1px solid var(--border);border-radius:6px;font-family:"DM Mono",monospace;font-size:10px;color:var(--gold);}
-.yenv-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
-.yenv-btn{padding:10px 6px;background:rgba(200,140,60,0.06);border:1.5px solid var(--border);border-radius:8px;text-align:center;width:100%;cursor:pointer;}
-.yenv-btn.on{background:rgba(184,151,42,0.15);border-color:var(--gold);}
-.yenv-lbl{font-family:"DM Mono",monospace;font-size:10px;color:var(--dark);font-weight:700;display:block;}
-.yenv-btn.on .yenv-lbl{color:var(--gold-d);}
-.yenv-ear{font-family:"DM Mono",monospace;font-size:9px;color:var(--muted);display:block;margin-top:3px;}
-.score-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-.score-badge{width:26px;height:26px;text-align:center;line-height:26px;border-radius:5px;font-family:"DM Mono",monospace;font-size:9px;font-weight:700;flex-shrink:0;}
-.score-name{font-size:12px;color:var(--dark);flex:1;}
-.score-val{font-family:"DM Mono",monospace;font-size:11px;font-weight:700;}
-.gen-btn{width:100%;padding:15px;background:var(--gold);border:none;color:var(--dbg);border-radius:10px;font-family:"DM Mono",monospace;font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;margin-top:8px;}
-.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(200,140,60,0.06);border:1.5px solid var(--border);border-radius:8px;margin-bottom:12px;}
-.toggle-lbl{font-size:12px;font-weight:600;color:var(--dark);}
-.toggle-sub{font-family:"DM Mono",monospace;font-size:9px;color:var(--muted);margin-top:2px;}
-.toggle-switch{position:relative;display:inline-block;width:46px;height:26px;cursor:pointer;flex-shrink:0;}
-.toggle-switch input{opacity:0;width:0;height:0;position:absolute;}
-.toggle-track{position:absolute;inset:0;background:rgba(184,151,42,0.2);border-radius:13px;transition:background 0.2s;}
-.toggle-switch input:checked+.toggle-track{background:var(--gold);}
-.toggle-thumb{position:absolute;top:4px;left:4px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.3);}
-.toggle-switch input:checked+.toggle-track .toggle-thumb{transform:translateX(20px);}
-.pg-wrap{padding:14px 12px 80px;}
-#toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--dark);color:#fff;font-family:"DM Mono",monospace;font-size:11px;padding:10px 18px;border-radius:8px;border-left:3px solid var(--gold);opacity:0;transition:all .25s;pointer-events:none;z-index:999;white-space:nowrap;}
-#toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
 <body>
@@ -224,7 +164,7 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
       <div><div class="tool-name">Stand Count</div><div class="tool-desc">Enter raw plant counts with tape length and row spacing. Auto-calculates stand/acre and generates a downloadable report.</div></div>
       <div class="tool-arrow">&#8250;</div>
     </div>
-    <div class="tool-card" onclick="launchTool('nes')">
+    <div class="tool-card" onclick="window.open('NESAnalyzer.html','_blank')">
       <div class="tool-icon ti-gold"><svg viewBox="0 0 40 40" width="26" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
   <circle cx="20" cy="20" r="18" stroke="#b8972a" stroke-width="2.5"/>
   <circle cx="20" cy="20" r="12" stroke="#b8972a" stroke-width="2.5"/>
@@ -364,98 +304,6 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
     <button class="ntab" onclick="scPreview()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Preview</button>
     <button class="ntab" onclick="scDownload()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download</button>
     <button class="ntab" onclick="scReset()"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>Reset</button>
-  </div>
-</div>
-<div class="screen" id="scr-nes">
-  <div class="nes-sub on" id="nes-setup">
-    <div class="nes-wrap">
-      <div class="card">
-        <div class="ctitle" style="display:flex;justify-content:space-between;align-items:center;">Report Info
-          <button class="sp-btn on" style="padding:5px 10px;border-radius:20px;font-size:9px;max-width:80px;">&#127805; Corn</button>
-        </div>
-        <div class="row2">
-          <div class="fg"><label>Scout Date</label><input type="text" id="nes-scout"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="ctitle">Grower</div>
-        <div class="row2">
-          <div class="fg"><label>Grower Name</label><input type="text" id="nes-grower" placeholder="Farm Name"></div>
-          <div class="fg"><label>Field Name</label><input type="text" id="nes-field" placeholder="Field"></div>
-          <div class="fg s2"><label>Location</label><input type="text" id="nes-loc" placeholder="County, State"></div>
-          <div class="fg s2"><label>Crop Stage</label><input type="text" id="nes-stage" placeholder="VE - V1"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="ctitle">Field Setup</div>
-        <div class="row2">
-          <div class="fg"><label>Row Spacing</label>
-            <div style="display:flex;gap:6px;" id="nes-sp-btns">
-              <button class="sp-btn" data-val="15">15&quot;</button>
-              <button class="sp-btn" data-val="20">20&quot;</button>
-              <button class="sp-btn on" data-val="30">30&quot;</button>
-            </div>
-          </div>
-          <div class="hint" id="nes-tape-hint" style="margin-top:6px;">Select row spacing to see measurement length.</div>
-        </div>
-      </div>
-      <div class="hybrid-box">
-        <div class="ctitle">Hybrid</div>
-        <input type="text" id="nes-hybrid-search" placeholder="Search hybrid..." style="width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;color:var(--dark);background:var(--inp);outline:none;-webkit-appearance:none;">
-        <div class="hybrid-list" id="nes-hybrid-list"></div>
-        <div class="hybrid-selected" id="nes-hybrid-sel"></div>
-      </div>
-      <div class="card">
-        <div class="ctitle">Yield Environment</div>
-        <div class="yenv-grid" id="nes-yenv-btns">
-          <button class="yenv-btn" data-key="low"><span class="yenv-lbl">&lt;180 bu/a</span><span class="yenv-ear" id="nes-ear-low"></span></button>
-          <button class="yenv-btn on" data-key="mid"><span class="yenv-lbl">180-240 bu/a</span><span class="yenv-ear" id="nes-ear-mid"></span></button>
-          <button class="yenv-btn" data-key="high"><span class="yenv-lbl">&gt;240 bu/a</span><span class="yenv-ear" id="nes-ear-high"></span></button>
-        </div>
-        <div class="hint" id="nes-yield-formula" style="margin-top:10px;"></div>
-        <div class="toggle-row" style="margin-top:12px;margin-bottom:0;">
-          <div><div class="toggle-lbl">Include Yield Potential</div><div class="toggle-sub">Uses ear size from Burrus chart</div></div>
-          <label class="toggle-switch"><input type="checkbox" id="nes-toggle-yield" checked><span class="toggle-track"><span class="toggle-thumb"></span></span></label>
-        </div>
-      </div>
-      <div class="card">
-        <div class="ctitle">Scoring Protocol</div>
-        <div class="score-row"><div class="score-badge" style="background:#3d7a3522;border:2px solid #3d7a3588;color:#3d7a35;">T</div><div class="score-name">Total Plants (raw count)</div><div class="score-val" style="color:#3d7a35;">base</div></div>
-        <div class="score-row"><div class="score-badge" style="background:#b8860b22;border:1px solid #b8860b66;color:#b8860b;">D</div><div class="score-name">Doubles</div><div class="score-val" style="color:#b8860b;">-0.5 ea</div></div>
-        <div class="score-row"><div class="score-badge" style="background:#d4820a22;border:1px solid #d4820a66;color:#d4820a;">1B</div><div class="score-name">1 Leaf Behind</div><div class="score-val" style="color:#d4820a;">-0.5 ea</div></div>
-        <div class="score-row" style="margin-bottom:0;"><div class="score-badge" style="background:#c0392b22;border:1px solid #c0392b66;color:#c0392b;">2B</div><div class="score-name">2+ Leaves Behind</div><div class="score-val" style="color:#c0392b;">-1.0 ea</div></div>
-      </div>
-    </div>
-  </div>
-  <div class="nes-sub" id="nes-samples">
-    <div class="nes-wrap">
-      <div class="nes-live" id="nes-live-card" style="display:none;">
-        <div class="nes-live-grid">
-          <div><div class="nes-lc-lbl">Raw Yield</div><div class="nes-lc-val" id="nlc-full" style="color:var(--gold);">-</div><div class="nes-lc-sub">bu/acre</div></div>
-          <div><div class="nes-lc-lbl">NES Yield</div><div class="nes-lc-val" id="nlc-nes" style="color:var(--gold);">-</div><div class="nes-lc-sub">bu/acre</div></div>
-          <div><div class="nes-lc-lbl">Yield Drag</div><div class="nes-lc-val" id="nlc-drag">-</div><div class="nes-lc-sub">bu/acre lost</div></div>
-        </div>
-        <div class="nes-bar-track"><div class="nes-bar-fill" id="nlc-bar"></div></div>
-        <div class="nes-bar-lbl" id="nlc-bar-lbl"></div>
-      </div>
-      <div id="nes-sample-list"></div>
-      <button class="addbtn" onclick="nesAddSampleCard()">+ Add Sample Location</button>
-      <button class="gen-btn" id="nes-gen-btn" style="display:none;margin-top:10px;" onclick="nesGenerateReport()">Generate Report</button>
-    </div>
-  </div>
-  <div class="nes-sub" id="nes-report">
-    <div class="pg-wrap">
-      <div class="dl-row">
-        <button class="dlbtn gold" onclick="nesDownloadReport()">&#11015; Download JPG</button>
-      </div>
-      <div class="canvas-wrap"><canvas id="nes-canvas"></canvas></div>
-    </div>
-  </div>
-  <div class="botnav on" id="nes-nav">
-    <button class="ntab" onclick="goHome()"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
-    <button class="ntab on" id="nes-nt-setup" onclick="nesShowSub('setup')"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>Setup</button>
-    <button class="ntab" id="nes-nt-samples" onclick="nesSync();nesShowSub('samples')"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Samples</button>
-    <button class="ntab" id="nes-nt-report" onclick="nesShowSub('report')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Report</button>
   </div>
 </div>
 <div class="screen" id="scr-sst">
@@ -612,7 +460,6 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
     <button class="ntab" onclick="gsrReset()"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>Reset</button>
   </div>
 </div>
-
 <div id="toast"></div>
 <script>
 
@@ -700,16 +547,13 @@ function showScreen(s){
   document.querySelectorAll('.botnav').forEach(function(el){el.classList.remove('on');});
   ge('scr-'+s).classList.add('on');
   var n=ge(s+'-nav');if(n)n.classList.add('on');
-  var T={home:'Field Tools',profile:'User Profile',sc:'Stand Count',nes:'NES + Yield Analyzer',sst:'Seed Spacing',gsr:'General Scouting'};
+  var T={home:'Field Tools',profile:'User Profile',sc:'Stand Count',sst:'Seed Spacing',gsr:'General Scouting'};
   ge('tb-title').textContent=T[s]||'Field Tools';
 }
 function goHome(){showScreen('home');}
-
-
 function launchTool(t){
   showScreen(t);
   if(t==='sst') sstResetA();
-
 }
 
 // PROFILE
@@ -863,15 +707,6 @@ function scLoadPhoto(n,inp){
   var f=inp.files[0];if(!f)return;ge('sc-p'+n+'nm').textContent=f.name;
   var r=new FileReader();r.onload=function(e){var img=new Image();img.onload=function(){if(n===1){scP1=e.target.result;scP1img=img;}else{scP2=e.target.result;scP2img=img;}};img.src=e.target.result;};r.readAsDataURL(f);
 }
-var nesP1=null,nesP2=null,nesP1img=null,nesP2img=null;
-function nesLoadPhoto(n,inp){
-  var f=inp.files[0];if(!f)return;ge('nes-p'+n+'nm').textContent=f.name;
-  var r=new FileReader();r.onload=function(e){
-    var img=new Image();
-    img.onload=function(){if(n===1){nesP1=e.target.result;nesP1img=img;}else{nesP2=e.target.result;nesP2img=img;}};
-    img.src=e.target.result;
-  };r.readAsDataURL(f);
-}
 function scReset(){
   ['sc-scout','sc-grower','sc-field','sc-loc','sc-stage','sc-tape','sc-p1cap','sc-p2cap'].forEach(function(id){var e=ge(id);if(e)e.value='';});
   scP1=null;scP2=null;scP1img=null;scP2img=null;
@@ -954,364 +789,6 @@ function scDraw(sc){
 }
 function scPreview(){toast('Building...');setTimeout(function(){scDraw(1);ge('sc-canvas').scrollIntoView({behavior:'smooth'});toast('Preview ready');},80);}
 function scDownload(){toast('Rendering...');setTimeout(function(){try{var cv=scDraw(2);downloadCanvas(cv,'stand-count-'+(gv('sc-field')||'report').replace(/\s+/g,'-').toLowerCase()+'.jpg');}catch(e){toast('Error: '+e.message);}},150);}
-
-// NES TOOL
-const HYBRIDS = [
-  {name:"Power Plus® 8J797 VE",  es:{low:0.35,mid:0.37,high:0.38}},
-  {name:"Power Plus® 1K18 Q",    es:{low:0.34,mid:0.36,high:0.38}},
-  {name:"Power Plus® 2W400 Q",   es:{low:0.35,mid:0.38,high:0.40}},
-  {name:"Power Plus® 1R47 VE",   es:{low:0.36,mid:0.39,high:0.41}},
-  {name:"Power Plus® 2A17 VE",   es:{low:0.38,mid:0.40,high:0.41}},
-  {name:"Power Plus® 2J67 Q",    es:{low:0.34,mid:0.36,high:0.39}},
-  {name:"Power Plus® 3H48 VE",   es:{low:0.34,mid:0.37,high:0.40}},
-  {name:"Power Plus® 4P27 VE",   es:{low:0.38,mid:0.40,high:0.41}},
-  {name:"Power Plus® 5F17 Q",    es:{low:0.35,mid:0.38,high:0.40}},
-  {name:"Power Plus® 5M76 VE",   es:{low:0.37,mid:0.40,high:0.42}},
-  {name:"Power Plus® 6G88 VE",   es:{low:0.36,mid:0.39,high:0.41}},
-  {name:"Burrus 6U77 SSP",       es:{low:0.35,mid:0.37,high:0.39}},
-  {name:"Burrus 7T27 SSP",       es:{low:0.36,mid:0.39,high:0.41}},
-  {name:"Power Plus® 7R68 VE",   es:{low:0.35,mid:0.37,high:0.41}},
-  {name:"Power Plus® 8J697AM",   es:{low:0.35,mid:0.37,high:0.38}},
-  {name:"Power Plus® 1K12AM",    es:{low:0.34,mid:0.36,high:0.38}},
-  {name:"Power Plus® 1U41AM",    es:{low:0.34,mid:0.36,high:0.38}},
-  {name:"Burrus 1R62 PCE",       es:{low:0.36,mid:0.39,high:0.41}},
-  {name:"Burrus 2A13 PCE",       es:{low:0.38,mid:0.40,high:0.41}},
-  {name:"Power Plus® 3G31AM",    es:{low:0.38,mid:0.39,high:0.42}},
-  {name:"Burrus 4W42 PCE",       es:{low:0.36,mid:0.38,high:0.40}},
-  {name:"Power Plus® 4V73AM",    es:{low:0.39,mid:0.40,high:0.43}},
-  {name:"Burrus 5C11 PCE",       es:{low:0.36,mid:0.37,high:0.40}},
-  {name:"Power Plus® 5J21AM",    es:{low:0.35,mid:0.38,high:0.40}},
-  {name:"Burrus 6M12 AA",        es:{low:0.35,mid:0.37,high:0.40}},
-  {name:"Burrus 6N54 VT2P",      es:{low:0.38,mid:0.40,high:0.41}},
-  {name:"Burrus 6Y61 DG VT2P",   es:{low:0.35,mid:0.37,high:0.38}},
-  {name:"Burrus 7B14 PCE",       es:{low:0.36,mid:0.39,high:0.41}},
-  {name:"Burrus 7F33 VT2P",      es:{low:0.35,mid:0.37,high:0.39}},
-  {name:"Burrus 7L62 AA",        es:{low:0.38,mid:0.40,high:0.42}},
-  {name:"Burrus 7P71 VT2P",      es:{low:0.35,mid:0.37,high:0.39}},
-  {name:"Burrus 8A12 VT2P",      es:{low:0.35,mid:0.39,high:0.42}},
-  {name:"Burrus 8K34 VT2P",      es:{low:0.35,mid:0.37,high:0.38}},
-  {name:"Power Plus® 2Y10",      es:{low:0.36,mid:0.38,high:0.40}},
-  {name:"Power Plus® 4W40",      es:{low:0.36,mid:0.38,high:0.40}},
-  {name:"Power Plus® 6H80",      es:{low:0.35,mid:0.39,high:0.40}},
-  {name:"Burrus 7F30",           es:{low:0.35,mid:0.37,high:0.39}},
-];
-
-var PLANT_TYPES=[
-  {id:'normal',label:'Total Plants',color:'#3d7a35',isTotal:true,deduct:0},
-  {id:'double',label:'Doubles',color:'#b8860b',deduct:0.5},
-  {id:'one_behind',label:'1 Leaf Behind',color:'#d4820a',deduct:0.5},
-  {id:'two_behind',label:'2+ Leaves Behind',color:'#c0392b',deduct:1.0}
-];
-var nesState={rowSpacing:30,seedingRate:32000,hybridIdx:0,yieldEnv:'mid',samples:[{plants:[]}],includeYield:true};
-
-function nesShowSub(n){
-  document.querySelectorAll('.nes-sub').forEach(function(p){p.classList.remove('on');});
-  document.querySelectorAll('#nes-nav .ntab').forEach(function(b){b.classList.remove('on');});
-  ge('nes-'+n).classList.add('on');var nt=ge('nes-nt-'+n);if(nt)nt.classList.add('on');
-  ge('scr-nes').scrollTop=0;
-}
-function nesSync(){
-  var sp=document.querySelector('#nes-sp-btns .sp-btn.on');if(sp)nesState.rowSpacing=parseInt(sp.dataset.val)||30;
-  nesRenderSamples();
-}
-function roundTo500(n){return Math.round(n/500)*500;}
-function calcSample(plants){
-  var tot=plants.filter(function(p){return p.type==='normal';}).length;
-  var dbl=plants.filter(function(p){return p.type==='double';}).length;
-  var ob=plants.filter(function(p){return p.type==='one_behind';}).length;
-  var tb=plants.filter(function(p){return p.type==='two_behind';}).length;
-  var nes=Math.max(0,tot-(dbl*0.5)-(ob*0.5)-(tb*1.0));
-  return{raw:tot,nes:nes,rawAcre:roundTo500(tot*1000),nesAcre:roundTo500(nes*1000),total:tot,doubles:dbl,oneBehind:ob,twoBehind:tb};
-}
-function yieldPot(nesAcre,earSize){if(!nesAcre||!earSize)return null;return Math.round((nesAcre*earSize)/56);}
-function statusFor(pct){
-  if(pct===null)return{label:'',color:C.muted};
-  if(pct>=90)return{label:'ADEQUATE STAND',color:C.green};
-  if(pct>=80)return{label:'MARGINAL - MONITOR',color:C.goldD};
-  return{label:'LOW - REVIEW REPLANT',color:C.red};
-}
-function getEarSize(){if(!nesState.includeYield)return null;return HYBRIDS[nesState.hybridIdx]&&HYBRIDS[nesState.hybridIdx].es?HYBRIDS[nesState.hybridIdx].es[nesState.yieldEnv]:null;}
-function getAggregates(){
-  var swd=nesState.samples.filter(function(s){return s.plants.length>0;});
-  if(!swd.length)return{avgRaw:null,avgNES:null,avgPct:null,yieldEst:null,fullRateYield:null,yieldDrag:null};
-  var avgRaw=Math.round(swd.reduce(function(a,s){return a+calcSample(s.plants).rawAcre;},0)/swd.length);
-  var avgNES=Math.round(swd.reduce(function(a,s){return a+calcSample(s.plants).nesAcre;},0)/swd.length);
-  var avgPct=avgRaw>0?parseFloat(((avgNES/avgRaw)*100).toFixed(1)):null;
-  var earSize=getEarSize();
-  var yieldEst=yieldPot(avgNES,earSize);
-  var fullRateYield=earSize&&avgRaw?Math.round((avgRaw*earSize)/56):null;
-  var yieldDrag=yieldEst&&fullRateYield?fullRateYield-yieldEst:null;
-  return{avgRaw:avgRaw,avgNES:avgNES,avgPct:avgPct,yieldEst:yieldEst,fullRateYield:fullRateYield,yieldDrag:yieldDrag};
-}
-function nesRenderHybridList(){
-  var q=gv('nes-hybrid-search').toLowerCase();
-  var filtered=HYBRIDS.filter(function(h){return h.name.toLowerCase().includes(q);});
-  ge('nes-hybrid-list').innerHTML=filtered.map(function(h){
-    var ri=HYBRIDS.indexOf(h);
-    var cls='hybrid-row'+(ri===nesState.hybridIdx?' on':'');
-    return '<div class="'+cls+'" data-idx="'+ri+'"><span>'+h.name+'</span><span>'+h.es.mid+' lbs</span></div>';
-  }).join('');
-  ge('nes-hybrid-list').querySelectorAll('.hybrid-row').forEach(function(row){
-    row.onclick=function(){nesState.hybridIdx=parseInt(row.dataset.idx);ge('nes-hybrid-search').value='';ge('nes-hybrid-sel').textContent='Selected: '+HYBRIDS[nesState.hybridIdx].name;nesRenderHybridList();nesUpdateYieldEnvUI();};
-  });
-}
-function nesUpdateYieldEnvUI(){
-  var h=HYBRIDS[nesState.hybridIdx];
-  ['low','mid','high'].forEach(function(k){var el=ge('nes-ear-'+k);if(el&&h)el.textContent=h.es[k]+' lbs/ear';});
-  var earSize=getEarSize();
-  var formula=ge('nes-yield-formula');
-  if(formula)formula.textContent=earSize?'Ear: '+earSize+' lbs - Formula: NES x '+earSize+' / 56 = bu/acre':'';
-  document.querySelectorAll('#nes-yenv-btns .yenv-btn').forEach(function(btn){btn.classList.toggle('on',btn.dataset.key===nesState.yieldEnv);});
-  ge('nes-hybrid-sel').textContent='Selected: '+HYBRIDS[nesState.hybridIdx].name;
-}
-function nesUpdateLive(){
-  var agg=getAggregates(),card=ge('nes-live-card');
-  if(!agg.yieldEst&&!agg.avgNES){card.style.display='none';return;}
-  card.style.display='block';
-  ge('nlc-full').textContent=agg.fullRateYield||'-';
-  ge('nlc-nes').textContent=agg.yieldEst||'-';
-  var de=ge('nlc-drag');de.textContent=agg.yieldDrag!=null?'-'+agg.yieldDrag:'-';
-  de.style.color=agg.yieldDrag<=5?C.green:agg.yieldDrag<=15?C.goldD:C.red;
-  var pct=agg.fullRateYield>0?(agg.yieldEst/agg.fullRateYield)*100:0;
-  ge('nlc-bar').style.width=pct+'%';
-  var st=statusFor(agg.avgPct);
-  ge('nlc-bar-lbl').textContent=st.label;ge('nlc-bar-lbl').style.color=st.color;
-}
-document.getElementById('nes-sp-btns').addEventListener('click',function(e){
-  var btn=e.target.closest('[data-val]');if(!btn)return;
-  nesState.rowSpacing=parseInt(btn.dataset.val);
-  document.querySelectorAll('#nes-sp-btns .sp-btn').forEach(function(b){b.classList.toggle('on',b.dataset.val==nesState.rowSpacing);});
-  nesUpdateTapeHint();
-});
-function nesUpdateTapeHint(){
-  var sp=nesState.rowSpacing;
-  if(!sp)return;
-  // 1/1000th acre = 43.56 sq ft; row width = sp/12 ft; length = 43.56/(sp/12) = 522.72/sp
-  var ft=Math.round((522.72/sp)*10)/10;
-  var h=ge('nes-tape-hint');
-  if(h)h.innerHTML='<strong>Measure '+ft+' ft</strong> per sample to count 1/1000th acre ('+sp+'&quot; rows)';
-}
-document.getElementById('nes-yenv-btns').addEventListener('click',function(e){
-  var btn=e.target.closest('[data-key]');if(!btn)return;
-  nesState.yieldEnv=btn.dataset.key;nesUpdateYieldEnvUI();nesUpdateLive();
-});
-document.getElementById('nes-hybrid-search').addEventListener('input',nesRenderHybridList);
-document.getElementById('nes-toggle-yield').addEventListener('change',function(){nesState.includeYield=this.checked;nesUpdateYieldEnvUI();nesUpdateLive();});
-
-function nesAddSampleCard(){nesState.samples.push({plants:[]});nesRenderSamples();}
-function nesRenderSamples(){
-  var container=ge('nes-sample-list');container.innerHTML='';
-  nesState.samples.forEach(function(s,idx){
-    var card=document.createElement('div');card.className='nes-scard';card.id='nsc-'+idx;
-    card.innerHTML=nesBuildSampleHTML(s,idx);container.appendChild(card);nesWireSampleCard(card,idx);
-  });
-  var swd=nesState.samples.filter(function(s){return s.plants.length>0;});
-  var gb=ge('nes-gen-btn');
-  if(swd.length>0){gb.style.display='block';gb.textContent='GENERATE REPORT ('+swd.length+' SAMPLE'+(swd.length!==1?'S':'')+')';}
-  else gb.style.display='none';
-  nesUpdateLive();
-}
-function nesBuildSampleHTML(s,idx){
-  var calc=calcSample(s.plants),earSize=getEarSize();
-  var yEst=yieldPot(calc.nesAcre,earSize);
-  var counts={normal:calc.total,double:calc.doubles,one_behind:calc.oneBehind,two_behind:calc.twoBehind};
-  var grid=PLANT_TYPES.map(function(pt){
-    var cnt=counts[pt.id];
-    var ts=pt.isTotal?'background:'+pt.color+'22;border:2px solid '+pt.color+'88;':'background:'+pt.color+'14;border:1px solid '+pt.color+'44;';
-    return '<div class="ptile" style="'+ts+'"><div><div class="ptile-name" style="color:'+pt.color+';">'+pt.label+'</div><div class="ptile-sub">'+(pt.isTotal?'raw count':'deduct '+pt.deduct+' ea')+'</div></div>'
-      +'<div class="ctr-wrap">'
-      +'<button class="ctr-btn" style="color:'+pt.color+';border-color:'+pt.color+'55;" data-action="dec" data-idx="'+idx+'" data-type="'+pt.id+'"'+(cnt===0?' disabled':'')+'>-</button>'
-      +'<input type="number" class="ctr-inp" style="color:'+pt.color+';border-color:'+pt.color+'55;" data-action="set" data-idx="'+idx+'" data-type="'+pt.id+'" value="'+cnt+'" min="0" max="99"/>'
-      +'<button class="ctr-btn" style="color:'+pt.color+';border-color:'+pt.color+'55;" data-action="inc" data-idx="'+idx+'" data-type="'+pt.id+'">+</button>'
-      +'</div></div>';
-  }).join('');
-  var stats='<div class="nes-stats">'
-    +'<div class="nes-stile" style="background:rgba(0,0,0,0.04);border-color:var(--border);"><div class="nes-stile-lbl">TOTAL/AC</div><div class="nes-stile-val" data-stat="raw" style="color:var(--dark);">'+(s.plants.length>0?calc.rawAcre.toLocaleString():'-')+'</div></div>'
-    +'<div class="nes-stile" style="background:rgba(184,151,42,0.08);border-color:rgba(184,151,42,0.25);"><div class="nes-stile-lbl" style="color:var(--gold);">NES</div><div class="nes-stile-val" data-stat="nes" style="color:var(--gold-d);">'+(s.plants.length>0?calc.nesAcre.toLocaleString():'-')+'</div></div>'
-    
-    +'<div class="nes-stile" style="background:rgba(74,158,187,0.08);border-color:rgba(74,158,187,0.25);"><div class="nes-stile-lbl" style="color:#4a9ebb;">YIELD</div><div class="nes-stile-val" data-stat="yield" style="color:#4a9ebb;">'+(yEst?yEst+' bu':'-')+'</div></div>'
-    +'</div>';
-  return '<div class="nes-scard-hdr"><div style="display:flex;align-items:center;gap:8px;"><div class="nes-sbadge">S'+(idx+1)+'</div><span style="font-family:monospace;font-size:9px;letter-spacing:1px;color:var(--gold);">SAMPLE '+(idx+1)+'</span></div>'
-    +'<button style="background:transparent;border:1px solid rgba(192,57,43,0.4);color:var(--red);border-radius:5px;padding:3px 9px;font-family:monospace;font-size:9px;cursor:pointer;" data-action="delete" data-idx="'+idx+'">remove</button></div>'
-    +'<div class="nes-scard-body"><div class="plant-grid">'+grid+'</div>'+stats+'</div>';
-}
-function nesWireSampleCard(card,idx){
-  card.addEventListener('click',function(e){
-    var el=e.target.closest('[data-action]');if(!el)return;
-    var action=el.dataset.action,i=parseInt(el.dataset.idx),t=el.dataset.type;
-    if(action==='delete'){nesState.samples.splice(i,1);if(!nesState.samples.length)nesState.samples.push({plants:[]});nesRenderSamples();}
-    if(action==='inc'){nesState.samples[i].plants.push({type:t});nesRenderSamples();}
-    if(action==='dec'){var rows=nesState.samples[i].plants;for(var j=rows.length-1;j>=0;j--){if(rows[j].type===t){rows.splice(j,1);break;}}nesRenderSamples();}
-  });
-  card.addEventListener('input',function(e){
-    var el=e.target.closest('[data-action="set"]');if(!el)return;
-    var i=parseInt(el.dataset.idx),t=el.dataset.type;
-    var newCount=Math.max(0,Math.min(99,parseInt(el.value)||0));
-    var others=nesState.samples[i].plants.filter(function(p){return p.type!==t;});
-    var newEntries=[];for(var k=0;k<newCount;k++)newEntries.push({type:t});
-    nesState.samples[i].plants=others.concat(newEntries);
-    nesUpdateLive();
-    var swd=nesState.samples.filter(function(s){return s.plants.length>0;});
-    var gb=ge('nes-gen-btn');
-    if(swd.length>0){gb.style.display='block';gb.textContent='GENERATE REPORT ('+swd.length+' SAMPLE'+(swd.length!==1?'S':'')+')';}else gb.style.display='none';
-    var card2=ge('nsc-'+i);
-    if(card2){
-      var calc=calcSample(nesState.samples[i].plants),earSize=getEarSize();
-      var yEst=yieldPot(calc.nesAcre,earSize);
-      var r=card2.querySelector('[data-stat="raw"]');if(r)r.textContent=calc.rawAcre.toLocaleString();
-      var n=card2.querySelector('[data-stat="nes"]');if(n)n.textContent=calc.nesAcre.toLocaleString();
-      var yl=card2.querySelector('[data-stat="yield"]');if(yl)yl.textContent=yEst?yEst+' bu':'-';
-    }
-  });
-}
-
-async function nesGenerateReport(){
-  var btn=ge('nes-gen-btn');btn.textContent='GENERATING...';btn.disabled=true;
-  try{
-    var sp=document.querySelector('#nes-sp-btns .sp-btn.on');if(sp)nesState.rowSpacing=parseInt(sp.dataset.val)||30;
-    var agg=getAggregates();
-    var swd=nesState.samples.filter(function(s){return s.plants.length>0;});
-    if(!swd.length){toast('Add at least one sample first');btn.textContent='GENERATE REPORT';btn.disabled=false;return;}
-    var earSize=getEarSize(),date=today(),st=statusFor(agg.avgPct);
-    var grower=gv('nes-grower'),field=gv('nes-field'),loc=gv('nes-loc'),stage=gv('nes-stage');
-    var W=860,PAD=44,cw=W-PAD*2,scale=2;
-    var nesVals=swd.map(function(s){return calcSample(s.plants).nesAcre;});
-    var maxNES=Math.max.apply(null,nesVals),minNES=Math.min.apply(null,nesVals);
-    var mxI=nesVals.indexOf(maxNES),mnI=nesVals.indexOf(minNES);
-    var estH=900+swd.length*40+200;
-    var cv=ge('nes-canvas');
-    cv.width=W*scale;cv.height=estH*scale;cv.style.width=W+'px';cv.style.height=estH+'px';
-    var ctx=cv.getContext('2d');ctx.scale(scale,scale);
-    ctx.fillStyle=C.tan;ctx.fillRect(0,0,W,estH);
-    var y=PAD;
-    ctx.fillStyle=C.muted;ctx.font='10px DM Mono,monospace';ctx.fillText('AGRONOMY FIELD REPORT',PAD,y+10);
-    ctx.fillStyle=C.dark;ctx.font='300 42px Playfair Display,serif';ctx.fillText('Stand Quality',PAD,y+52);
-    var sw2=ctx.measureText('Stand Quality').width;
-    ctx.fillStyle=C.gold;ctx.font='900 42px Playfair Display,serif';ctx.fillText(' Analysis',PAD+sw2,y+52);
-    ctx.textAlign='right';
-    ctx.fillStyle=C.muted;ctx.font='11px DM Mono,monospace';ctx.fillText(date,W-PAD,y+10);
-    ctx.fillStyle=C.dark;ctx.font='600 18px Source Serif 4,serif';ctx.fillText(grower||'-',W-PAD,y+32);
-    ctx.fillStyle=C.muted;ctx.font='11px Source Serif 4,serif';
-    ctx.fillText([field,loc].filter(Boolean).join(' - '),W-PAD,y+50);
-    ctx.fillText(nesState.rowSpacing+'" Row Corn',W-PAD,y+66);
-    ctx.textAlign='left';y+=74;
-    ctx.strokeStyle=C.gold;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(PAD,y);ctx.lineTo(W-PAD,y);ctx.stroke();y+=16;
-    drawAgroBar(ctx,PAD,y,cw);y+=72;
-    drawFieldBar(ctx,PAD,y,cw,[['Samples',swd.length],['Stage',stage||'-'],['Row Spacing',nesState.rowSpacing+'"'],['Scout Date',gv('nes-scout')||date]]);y+=58;
-
-    // METRICS with auto-scale
-    var avgNES=agg.avgNES||0,avgRaw=agg.avgRaw||0;
-    var nesEffPct=avgRaw>0?parseFloat(((avgNES/avgRaw)*100).toFixed(1))+'%':'-';
-    var mItems=[
-      {l:'Raw Stand (pl/ac)',v:fmt(avgRaw),c:C.dark},
-      {l:'Net Eff Stand (pl/ac)',v:fmt(avgNES),c:C.goldD},
-      {l:'NES Efficiency',v:nesEffPct,c:parseFloat(nesEffPct)>=90?C.green:parseFloat(nesEffPct)>=85?C.goldD:C.red,sz:16},
-      {l:'Threshold',v:'85%',c:C.muted},
-      {l:'Yield Est (bu/ac)',v:agg.yieldEst?String(agg.yieldEst):'-',c:'#1a6a9a'},
-      {l:'Yield Drag (bu/ac)',v:agg.yieldDrag?String(agg.yieldDrag):'-',c:C.red}
-    ];
-    var mw=(cw-10)/3;
-    mItems.forEach(function(m,i){
-      var mx2=PAD+Math.floor(i%3)*(mw+5),my=y+Math.floor(i/3)*62;
-      roundRect(ctx,mx2,my,mw,56,5,C.white,C.border,1);
-      ctx.fillStyle=C.muted;ctx.font='8px DM Mono,monospace';ctx.fillText(m.l.toUpperCase(),mx2+10,my+16);
-      ctx.fillStyle=m.c;
-      var mSz=m.sz||17,mMaxW=mw-20;
-      ctx.font='700 '+mSz+'px Playfair Display,serif';
-      while(ctx.measureText(m.v).width>mMaxW&&mSz>10){mSz-=1;ctx.font='700 '+mSz+'px Playfair Display,serif';}
-      ctx.fillText(m.v,mx2+10,my+42);
-    });
-    y+=140;
-    // SAMPLES
-    ctx.fillStyle=C.gold;ctx.font='700 8px DM Mono,monospace';ctx.fillText('INDIVIDUAL STAND COUNTS',PAD,y+10);y+=18;
-    swd.forEach(function(s,i){
-      var calc=calcSample(s.plants);
-      var isMin=(calc.nesAcre===minNES&&i===mnI),isMax=(calc.nesAcre===maxNES&&i===mxI);
-      roundRect(ctx,PAD,y,cw,34,3,C.white,C.border,1);
-      ctx.fillStyle=C.muted;ctx.font='8px DM Mono,monospace';ctx.fillText('S'+(i+1),PAD+10,y+11);
-      var vc=isMin?C.red:isMax?C.goldD:C.dark;
-      ctx.fillStyle=vc;ctx.font='700 20px Playfair Display,serif';ctx.textAlign='center';ctx.fillText(fmt(calc.nesAcre),PAD+cw/2,y+24);ctx.textAlign='left';
-      ctx.fillStyle=C.muted;ctx.font='9px DM Mono,monospace';ctx.textAlign='right';
-      ctx.fillText('Raw:'+fmt(calc.rawAcre)+' D:'+calc.doubles+' 1B:'+calc.oneBehind+' 2B:'+calc.twoBehind,PAD+cw-12,y+24);
-      ctx.textAlign='left';
-      ctx.fillStyle=isMin?C.red:isMax?C.goldD:C.gold;ctx.beginPath();ctx.arc(PAD+cw/2,y+31,2.5,0,Math.PI*2);ctx.fill();
-      y+=38;
-    });y+=8;
-
-    // PLANT CATEGORY SUMMARY
-    var totD=0,tot1B=0,tot2B=0,totRaw=0,totNES=0;
-    swd.forEach(function(s){
-      var c=calcSample(s.plants);
-      totD+=c.doubles;tot1B+=c.oneBehind;tot2B+=c.twoBehind;
-      totRaw+=c.rawAcre;totNES+=c.nesAcre;
-    });
-    var avgD=swd.length?Math.round(totD/swd.length):0;
-    var avg1B=swd.length?Math.round(tot1B/swd.length):0;
-    var avg2B=swd.length?Math.round(tot2B/swd.length):0;
-    var sumCols=[
-      {l:'Avg Doubles',v:String(avgD),sub:'per sample',c:C.goldD},
-      {l:'Avg 1 Leaf Behind',v:String(avg1B),sub:'per sample',c:'#d4820a'},
-      {l:'Avg 2+ Leaves Behind',v:String(avg2B),sub:'per sample',c:C.red}
-    ];
-    var smw=(cw-10)/3;
-    roundRect(ctx,PAD,y,cw,86,5,C.panel,C.border,1);
-    ctx.fillStyle=C.gold;ctx.font='700 8px DM Mono,monospace';ctx.fillText('PLANT CATEGORY AVERAGES',PAD+14,y+16);
-    sumCols.forEach(function(col,i){
-      var sx=PAD+14+i*(smw+5);
-      ctx.fillStyle=C.muted;ctx.font='8px DM Mono,monospace';ctx.fillText(col.l.toUpperCase(),sx,y+32);
-      ctx.fillStyle=col.c;
-      var sSz=28;ctx.font='700 '+sSz+'px Playfair Display,serif';
-      while(ctx.measureText(col.v).width>smw-10&&sSz>14){sSz-=1;ctx.font='700 '+sSz+'px Playfair Display,serif';}
-      ctx.fillText(col.v,sx,y+64);
-      ctx.fillStyle=C.muted;ctx.font='8px DM Mono,monospace';ctx.fillText(col.sub,sx,y+78);
-    });
-    y+=98;
-
-    // PHOTOS
-    var nesHasP=!!(nesP1img||nesP2img);
-    if(nesHasP){
-      var pcw=cw,ph=180;
-      var photoCols=[nesP1img,nesP2img].filter(Boolean);
-      var pColW=photoCols.length>1?(pcw-10)/2:pcw;
-      ctx.fillStyle=C.gold;ctx.font='700 8px DM Mono,monospace';ctx.fillText('FIELD PHOTOS',PAD,y+14);y+=22;
-      photoCols.forEach(function(img,n){
-        var px2=PAD+(n*(pColW+10));
-        roundRect(ctx,px2,y,pColW,ph,4,C.darkBg,null);
-        var ar=img.width/img.height,tw=pColW,th=ph;
-        if(ar>tw/th)th=tw/ar;else tw=th*ar;
-        ctx.save();roundRect(ctx,px2,y,pColW,ph,4);ctx.clip();
-        ctx.drawImage(img,px2+(pColW-tw)/2,y+(ph-th)/2,tw,th);ctx.restore();
-        var cap=gv(n===0?'nes-p1cap':'nes-p2cap');
-        if(cap){ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(px2,y+ph-22,pColW,22);ctx.fillStyle='#ddd';ctx.font='9px DM Mono,monospace';ctx.fillText(cap,px2+7,y+ph-7);}
-      });
-      y+=ph+12;
-    }
-    // OBS
-    var obs=[];document.querySelectorAll('#nes-olist textarea').forEach(function(t){if(t.value.trim())obs.push(t.value.trim());});
-    y=drawObs(ctx,PAD,y,cw,obs);
-    ctx.fillStyle=C.muted;ctx.font='8px DM Mono,monospace';
-    ctx.fillText('NES = Total - (Doubles x 0.5) - (1 Leaf Behind x 0.5) - (2+ Leaves Behind x 1.0)',PAD,y);y+=14;
-    var finalY=drawFooter(ctx,PAD,W,y,grower,field,date);
-    finishCanvas(cv,scale,W,finalY);
-    nesShowSub('report');toast('Report ready!');
-  }catch(err){console.error(err);toast('Report error: '+err.message);}
-  var swd2=nesState.samples.filter(function(s){return s.plants.length>0;});
-  btn.textContent='GENERATE REPORT ('+swd2.length+' SAMPLES)';btn.disabled=false;
-}
-function nesDownloadReport(){
-  var cv=ge('nes-canvas');if(!cv.width)return toast('Generate the report first');
-  downloadCanvas(cv,'nes-report-'+(gv('nes-grower')||'report').replace(/\s+/g,'-').toLowerCase()+'.jpg');
-}
-
-// OBS for NES
-var nesOC=0;
-function nesAddObs(v){
-  nesOC++;var idx=nesOC,list=ge('nes-olist');if(!list)return;
-  var d=document.createElement('div');d.className='orow';d.id='nesor'+idx;
-  d.innerHTML='<span class="odash">-</span><textarea id="nesot'+idx+'" placeholder="Enter observation...">'+(v||'')+'</textarea><button class="sdel" data-del="nesor'+idx+'">&#215;</button>';
-  d.querySelector('[data-del]').onclick=function(){var e=ge(this.getAttribute('data-del'));if(e)e.remove();};
-  list.appendChild(d);
-}
 
 // SEED SPACING TOOL
 // ════════════════════════════════════
@@ -1592,26 +1069,9 @@ function gsrReset(){
 
 window.addEventListener('DOMContentLoaded',function(){
   loadUser();
-  var t=today();ge('sc-scout').value=t;ge('nes-scout').value=t;ge('gsr-date').value=t;
+  var t=today();ge('sc-scout').value=t;ge('gsr-date').value=t;
   scBuildSpBtns();scAddSample(null);scAddObs(null);
   gsrAddObs(null);gsrAddPhotoSlot();
-  nesRenderHybridList();nesUpdateYieldEnvUI();nesUpdateTapeHint();
-  // Add obs section to NES samples
-  var wrap=ge('nes-samples').querySelector('.nes-wrap');
-  if(wrap){
-    // Photos card
-    var pc=document.createElement('div');pc.className='card';pc.style.marginTop='12px';
-    pc.innerHTML='<div class="ctitle">Field Photos (optional)</div>'
-      +'<label class="pzone" for="nes-p1up"><span class="pzicon">&#128247;</span><div><div class="pzlbl">Photo 1</div><div class="pzname" id="nes-p1nm">No photo chosen</div></div><input type="file" id="nes-p1up" accept="image/*" onchange="nesLoadPhoto(1,this)"></label>'
-      +'<div class="fg"><label>Caption</label><input type="text" id="nes-p1cap" placeholder="Caption..."></div>'
-      +'<label class="pzone" for="nes-p2up" style="margin-top:10px"><span class="pzicon">&#128247;</span><div><div class="pzlbl">Photo 2</div><div class="pzname" id="nes-p2nm">No photo chosen</div></div><input type="file" id="nes-p2up" accept="image/*" onchange="nesLoadPhoto(2,this)"></label>'
-      +'<div class="fg"><label>Caption</label><input type="text" id="nes-p2cap" placeholder="Caption..."></div>';
-    wrap.appendChild(pc);
-    // Obs card
-    var oc=document.createElement('div');oc.className='card';oc.style.marginTop='12px';
-    oc.innerHTML='<div class="ctitle">Field Observations</div><div id="nes-olist"></div><button class="addbtn" onclick="nesAddObs(null)">+ Add Observation</button>';
-    wrap.appendChild(oc);nesAddObs(null);
-  }
   showScreen('home');
 });
 </script>
