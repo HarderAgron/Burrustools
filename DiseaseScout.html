@@ -730,7 +730,44 @@ function buildRefGrid(key){
 // ── USER PROFILE (received from parent app via postMessage) ──────────────────
 var DIS_PROFILE = {name:'', title:'', phone:'', email:'', photo:null};
 var DIS_PROF_IMG = null;
+
+// Origins allowed to send messages into this tool. Add the parent app's exact
+// origin(s) here (scheme + host + port, no trailing slash), e.g.
+// 'https://app.burrusseed.com'. Leaving this empty rejects all postMessages.
+var TRUSTED_MESSAGE_ORIGINS = new Set([
+  // 'https://app.example.com',
+]);
+
+// Returns true only when the message comes from an allowed origin.
+// Optionally also confirms the message came from our parent/opener window.
+function isTrustedMessageEvent(e){
+  if(!TRUSTED_MESSAGE_ORIGINS.has(e.origin)) return false;
+  // If running framed, require the sender to be our parent window.
+  if(window.parent && window.parent !== window){
+    if(e.source && e.source !== window.parent) return false;
+  }
+  return true;
+}
+
+// Parse and normalize an avatar URL, allowing only safe image schemes.
+// Returns the normalized href string, or null if disallowed/invalid.
+function sanitizeAvatarUrl(src){
+  if(typeof src !== 'string' || !src) return null;
+  var u;
+  try { u = new URL(src, window.location.href); }
+  catch(_) { return null; }
+  var scheme = u.protocol.toLowerCase();
+  if(scheme === 'http:' || scheme === 'https:' || scheme === 'blob:') return u.href;
+  if(scheme === 'data:'){
+    // Only data: URLs declaring an image MIME type.
+    if(/^data:image\//i.test(u.href)) return u.href;
+    return null;
+  }
+  return null; // javascript:, file:, etc. rejected
+}
+
 window.addEventListener('message', function(e){
+  if(!isTrustedMessageEvent(e)) return;
   if(!e.data) return;
   // Parent nav button actions
   if(e.data.type === 'burrus-action'){
@@ -743,11 +780,12 @@ window.addEventListener('message', function(e){
   // Profile data from parent app
   if(e.data.type === 'burrus-profile'){
     DIS_PROFILE = e.data.profile;
-    if(e.data.profile.photo){
+    var safePhoto = e.data.profile ? sanitizeAvatarUrl(e.data.profile.photo) : null;
+    if(safePhoto){
       var img=new Image();
       img.onload=function(){ DIS_PROF_IMG=img; };
-      img.src=e.data.profile.photo;
-      updateAvatar(e.data.profile.photo);
+      img.src=safePhoto;
+      updateAvatar(safePhoto);
     } else { DIS_PROF_IMG=null; updateAvatar(null); }
   }
 });
@@ -756,11 +794,10 @@ function updateAvatar(src){
   var av=document.getElementById('tb-avatar');
   if(!av) return;
   av.innerHTML='';
-  // Only allow safe image URL schemes; reject javascript:, etc.
-  var ok=src&&/^(data:image\/|https:|http:|blob:)/i.test(src);
-  if(ok){
+  var safe = sanitizeAvatarUrl(src);
+  if(safe){
     var img=document.createElement('img');
-    img.src=src;
+    img.src=safe;
     img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;';
     av.appendChild(img);
   } else {
