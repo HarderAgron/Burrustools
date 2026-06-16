@@ -157,6 +157,8 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
   <div class="ctitle">Soil Properties</div>
   <div class="fg">
     <label>Soil Texture</label>
+    <button class="seg-btn" id="soil-gps-btn" onclick="detectSoilGPS()" style="width:100%;background:var(--gold,#c88c3c);color:#1a1208;border-color:var(--gold,#c88c3c);margin-bottom:6px;padding:11px;">📍 Detect Soil Type from GPS</button>
+    <div class="hint" id="soil-gps-status" style="margin-bottom:8px;min-height:12px;"></div>
     <div class="seg grid2" id="seg-soilTexture">
       <button class="seg-btn"    data-val="sand">Sand / Loamy Sand</button>
       <button class="seg-btn"    data-val="sandy_loam">Sandy Loam</button>
@@ -635,6 +637,82 @@ document.addEventListener('DOMContentLoaded', function() {
   if(_avPh){ var _avEl=document.getElementById('tb-avatar'); if(_avEl){ _avEl.style.backgroundImage='url('+_avPh+')'; _avEl.style.backgroundSize='cover'; _avEl.style.backgroundPosition='center'; _avEl.textContent=''; } }
   function ge(id){return document.getElementById(id);}
   function gv(id){var e=ge(id);return e?e.value.trim():'';}
+
+  /* ── GPS → SOIL TEXTURE (SoilGrids + USDA classification) ── */
+  // Map % sand/silt/clay to a USDA texture class, then to this tool's button value.
+  function usdaTextureClass(sand, silt, clay) {
+    // Standard USDA textural triangle rules (percentages, sum ~100).
+    if (clay >= 40 && silt >= 40) return {usda:'Silty Clay', val:'clay'};
+    if (clay >= 40 && sand <= 45) return {usda:'Clay', val:'clay'};
+    if (clay >= 35 && sand >= 45) return {usda:'Sandy Clay', val:'clay'};
+    if (clay >= 27 && clay < 40 && sand <= 20) return {usda:'Silty Clay Loam', val:'sicl'};
+    if (clay >= 27 && clay < 40 && sand > 20 && sand <= 45) return {usda:'Clay Loam', val:'clay_loam'};
+    if (clay >= 20 && clay < 35 && silt < 28 && sand > 45) return {usda:'Sandy Clay Loam', val:'scl'};
+    if (clay >= 7 && clay < 27 && silt >= 28 && silt < 50 && sand <= 52) return {usda:'Loam', val:'loam'};
+    if (silt >= 50 && clay >= 12 && clay < 27) return {usda:'Silt Loam', val:'silt_loam'};
+    if (silt >= 50 && clay < 12) return (silt >= 80 ? {usda:'Silt', val:'silt_loam'} : {usda:'Silt Loam', val:'silt_loam'});
+    if (clay < 20 && sand > 52 && silt + 2*clay >= 30) return {usda:'Sandy Loam', val:'sandy_loam'};
+    if (clay < 7 && silt < 50 && sand >= 43 && sand <= 85) return {usda:'Sandy Loam', val:'sandy_loam'};
+    if (sand >= 70 && sand < 90 && (silt + 1.5*clay) >= 15) return {usda:'Loamy Sand', val:'sand'};
+    if (sand >= 85) return {usda:'Sand', val:'sand'};
+    // Fallback: pick dominant fraction
+    if (clay >= silt && clay >= sand) return {usda:'Clay Loam', val:'clay_loam'};
+    if (sand >= silt) return {usda:'Sandy Loam', val:'sandy_loam'};
+    return {usda:'Silt Loam', val:'silt_loam'};
+  }
+
+  // Programmatically select the matching texture button (fires its existing handler).
+  function applyTextureButton(val) {
+    var seg = ge('seg-soilTexture');
+    if (!seg) return;
+    var btn = seg.querySelector('.seg-btn[data-val="' + val + '"]');
+    if (btn) btn.click();
+  }
+
+  function setSoilStatus(msg) { var s = ge('soil-gps-status'); if (s) s.textContent = msg; }
+
+  window.detectSoilGPS = function() {
+    if (!navigator.geolocation) { setSoilStatus('⚠ GPS not supported on this device/browser.'); return; }
+    var btn = ge('soil-gps-btn');
+    if (btn) btn.disabled = true;
+    setSoilStatus('Requesting GPS location… (tap "Allow" if prompted)');
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      var lat = pos.coords.latitude, lon = pos.coords.longitude;
+      setSoilStatus('Location found · Querying SoilGrids…');
+      // SoilGrids: topsoil (0–5cm) clay/sand/silt, mean value, in g/kg (×0.1 = %).
+      var url = 'https://rest.isric.org/soilgrids/v2.0/properties/query?lon=' + lon + '&lat=' + lat +
+                '&property=clay&property=sand&property=silt&depth=0-5cm&value=mean';
+      fetch(url).then(function(r){ if(!r.ok) throw new Error('SoilGrids unavailable.'); return r.json(); })
+      .then(function(data){
+        var layers = data.properties.layers;
+        function frac(name){
+          var L = layers.find(function(x){return x.name===name;});
+          var v = L && L.depths && L.depths[0] && L.depths[0].values;
+          // values are g/kg; convert to %
+          return v && v.mean != null ? v.mean / 10 : null;
+        }
+        var clay = frac('clay'), sand = frac('sand'), silt = frac('silt');
+        if (clay == null || sand == null || silt == null) throw new Error('No soil data at this location.');
+        // Normalize to 100% in case of rounding
+        var tot = clay + sand + silt;
+        if (tot > 0) { clay = clay/tot*100; sand = sand/tot*100; silt = silt/tot*100; }
+        var cls = usdaTextureClass(sand, silt, clay);
+        applyTextureButton(cls.val);
+        setSoilStatus('✓ ' + cls.usda + ' (' + Math.round(sand) + '% sand · ' +
+                      Math.round(silt) + '% silt · ' + Math.round(clay) + '% clay) — selected below. Adjust if needed.');
+        if (btn) btn.disabled = false;
+      }).catch(function(e){
+        setSoilStatus('⚠ ' + (e.message || 'Could not fetch soil data.') + ' Select texture manually.');
+        if (btn) btn.disabled = false;
+      });
+    }, function(err){
+      var msgs = {1:'Location permission denied. Enable it or select texture manually.',
+                  2:'Location unavailable. Try again or select manually.',
+                  3:'Location request timed out. Try again or select manually.'};
+      setSoilStatus('⚠ ' + (msgs[err.code] || 'Could not get GPS location.'));
+      if (btn) btn.disabled = false;
+    }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
+  };
 
   /* ── HYBRID DATABASE ── */
   var HYBRIDS = {
