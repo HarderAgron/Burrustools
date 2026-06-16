@@ -1401,6 +1401,19 @@ async function fetchWeatherGPS() {
             const city = r.city || r.locality || r.principalSubdivision || '';
             const state = r.principalSubdivisionCode ? r.principalSubdivisionCode.replace(/^US-/, '') : '';
             if (city) placeName = city + (state ? ', ' + state : '');
+            // Find county from administrative hierarchy (US counties usually adminLevel 6).
+            let county = '';
+            const admin = (r.localityInfo && r.localityInfo.administrative) || [];
+            const countyEntry = admin.find(a => a.adminLevel === 6 && /county|parish|borough/i.test(a.name))
+              || admin.find(a => /county|parish|borough/i.test(a.name || ''))
+              || admin.find(a => a.adminLevel === 6);
+            if (countyEntry && countyEntry.name) county = countyEntry.name;
+            // Auto-fill the scout Location field as "County, ST" (only if empty).
+            const locEl = document.getElementById('s-loc');
+            if (locEl && !locEl.value.trim()) {
+              if (county) locEl.value = county + (state ? ', ' + state : '');
+              else if (city) locEl.value = placeName;
+            }
           }
         } catch(_) { /* keep coordinate fallback */ }
         await loadForecast(lat, lon, placeName, null);
