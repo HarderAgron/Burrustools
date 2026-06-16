@@ -334,7 +334,9 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
     <!-- WEATHER RISK CARD -->
     <div class="card" id="wx-card-outer">
       <div class="ctitle">Weather Risk · 7-Day Forecast</div>
-      <div class="tip">Enter your ZIP code to fetch a 7-day forecast. The model calculates disease-favorable hours and adjusts your yield loss estimate accordingly.</div>
+      <div class="tip">Use your current GPS location or enter a ZIP code to fetch a 7-day forecast. The model calculates disease-favorable hours and adjusts your yield loss estimate accordingly.</div>
+      <button class="wx-fetch-btn" id="wx-fetch-btn-gps" onclick="fetchWeatherGPS()" style="width:100%;margin-bottom:8px;">📍 Use My GPS Location</button>
+      <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1.5px;color:rgba(255,255,255,0.25);text-align:center;margin-bottom:8px;">— OR —</div>
       <div class="wx-zip-row">
         <input class="wx-zip-inp" id="wx-zip" type="text" inputmode="numeric" maxlength="5" placeholder="ZIP Code" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
         <button class="wx-fetch-btn" id="wx-fetch-btn-zip" onclick="fetchWeather()">Get Forecast</button>
@@ -1319,6 +1321,43 @@ function hoursToRisk(hrs) {
   return           {level:'Minimal',    cls:'risk-low',  mult:0.7, label:'×0.7 (favorable)'};
 }
 
+// Fetch forecast from Open-Meteo for a given lat/lon and store results.
+// zip is optional; placeName is a display label.
+async function loadForecast(lat, lon, placeName, zip) {
+  setWxStatus('Found ' + placeName + ' · Fetching 7-day forecast…');
+  const wxUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
+    '&hourly=temperature_2m,relativehumidity_2m,dewpoint_2m,precipitation_probability' +
+    '&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=7';
+  const wxResp = await fetch(wxUrl);
+  if (!wxResp.ok) throw new Error('Weather service unavailable.');
+  const wx = await wxResp.json();
+  const hours = wx.hourly.time.map((t,i) => ({
+    time: t,
+    temp_f: wx.hourly.temperature_2m[i],
+    rh: wx.hourly.relativehumidity_2m[i],
+    dewpoint_f: wx.hourly.dewpoint_2m[i],
+    precip_prob: wx.hourly.precipitation_probability[i],
+    dewdiff: wx.hourly.temperature_2m[i] - wx.hourly.dewpoint_2m[i],
+  }));
+  const favHours = {};
+  DIS_KEYS.forEach(k => { favHours[k] = hours.filter(h => WX_THRESHOLDS[k].check(h)).length; });
+  const temps = hours.map(h=>h.temp_f).filter(v=>v!==null);
+  const rhs = hours.map(h=>h.rh).filter(v=>v!==null);
+  const precipDays = new Set(hours.filter(h=>h.precip_prob>=50).map(h=>h.time.slice(0,10))).size;
+  wxData = {
+    place: placeName, lat, lon, zip: zip || null,
+    favHours,
+    avgHigh: Math.round(Math.max(...temps.filter((_,i)=>i%24===14))),
+    avgRH: Math.round(rhs.reduce((a,b)=>a+b,0)/rhs.length),
+    precipDays,
+    fetched: new Date().toLocaleTimeString(),
+  };
+  setWxStatus('');
+  renderWxResults();
+  recalcAll();
+  toast('Weather forecast loaded!');
+}
+
 async function fetchWeather() {
   const zip = document.getElementById('wx-zip').value.trim();
   if (zip.length !== 5) { setWxStatus('Enter a valid 5-digit ZIP code.'); return; }
@@ -1332,43 +1371,57 @@ async function fetchWeather() {
     const lat = parseFloat(geo.places[0].latitude);
     const lon = parseFloat(geo.places[0].longitude);
     const placeName = geo.places[0]['place name'] + ', ' + geo.places[0]['state abbreviation'];
-    setWxStatus('Found ' + placeName + ' · Fetching 7-day forecast…');
-    const wxUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
-      '&hourly=temperature_2m,relativehumidity_2m,dewpoint_2m,precipitation_probability' +
-      '&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=7';
-    const wxResp = await fetch(wxUrl);
-    if (!wxResp.ok) throw new Error('Weather service unavailable.');
-    const wx = await wxResp.json();
-    const hours = wx.hourly.time.map((t,i) => ({
-      time: t,
-      temp_f: wx.hourly.temperature_2m[i],
-      rh: wx.hourly.relativehumidity_2m[i],
-      dewpoint_f: wx.hourly.dewpoint_2m[i],
-      precip_prob: wx.hourly.precipitation_probability[i],
-      dewdiff: wx.hourly.temperature_2m[i] - wx.hourly.dewpoint_2m[i],
-    }));
-    const favHours = {};
-    DIS_KEYS.forEach(k => { favHours[k] = hours.filter(h => WX_THRESHOLDS[k].check(h)).length; });
-    const temps = hours.map(h=>h.temp_f).filter(v=>v!==null);
-    const rhs = hours.map(h=>h.rh).filter(v=>v!==null);
-    const precipDays = new Set(hours.filter(h=>h.precip_prob>=50).map(h=>h.time.slice(0,10))).size;
-    wxData = {
-      place: placeName, lat, lon, zip,
-      favHours,
-      avgHigh: Math.round(Math.max(...temps.filter((_,i)=>i%24===14))),
-      avgRH: Math.round(rhs.reduce((a,b)=>a+b,0)/rhs.length),
-      precipDays,
-      fetched: new Date().toLocaleTimeString(),
-    };
-    setWxStatus('');
-    renderWxResults();
-    recalcAll();
-    toast('Weather forecast loaded!');
+    await loadForecast(lat, lon, placeName, zip);
   } catch(e) {
     setWxStatus('⚠ ' + (e.message || 'Could not fetch weather. Check connection.'));
     wxData = null;
   }
   btn.disabled = false;
+}
+
+async function fetchWeatherGPS() {
+  if (!navigator.geolocation) {
+    setWxStatus('⚠ GPS not supported on this device/browser.');
+    return;
+  }
+  const btn = document.getElementById('wx-fetch-btn-gps');
+  btn.disabled = true;
+  setWxStatus('Requesting GPS location… (tap "Allow" if prompted)');
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      try {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        // Reverse geocode for a friendly place label (best-effort; falls back to coords).
+        let placeName = lat.toFixed(4) + ', ' + lon.toFixed(4);
+        try {
+          const rg = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=en');
+          if (rg.ok) {
+            const r = await rg.json();
+            const city = r.city || r.locality || r.principalSubdivision || '';
+            const state = r.principalSubdivisionCode ? r.principalSubdivisionCode.replace(/^US-/, '') : '';
+            if (city) placeName = city + (state ? ', ' + state : '');
+          }
+        } catch(_) { /* keep coordinate fallback */ }
+        await loadForecast(lat, lon, placeName, null);
+      } catch(e) {
+        setWxStatus('⚠ ' + (e.message || 'Could not fetch weather. Check connection.'));
+        wxData = null;
+      }
+      btn.disabled = false;
+    },
+    (err) => {
+      const msgs = {
+        1: 'Location permission denied. Enable it in your browser settings, or use ZIP code.',
+        2: 'Location unavailable. Try again or use ZIP code.',
+        3: 'Location request timed out. Try again or use ZIP code.',
+      };
+      setWxStatus('⚠ ' + (msgs[err.code] || 'Could not get GPS location. Use ZIP code instead.'));
+      wxData = null;
+      btn.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
 }
 
 function setWxStatus(msg) {
@@ -1379,7 +1432,7 @@ function renderWxResults() {
   if (!wxData) return;
   const res = document.getElementById('wx-results');
   res.classList.add('on');
-  document.getElementById('wx-loc-lbl').textContent = wxData.place + ' · ZIP ' + wxData.zip;
+  document.getElementById('wx-loc-lbl').textContent = wxData.place + (wxData.zip ? ' · ZIP ' + wxData.zip : ' · GPS');
   document.getElementById('wx-updated').textContent = 'Updated ' + wxData.fetched;
   document.getElementById('wx-avg-high').textContent = wxData.avgHigh;
   document.getElementById('wx-avg-rh').textContent = wxData.avgRH;
@@ -1810,7 +1863,7 @@ function renderCanvas(){
     y+=6;
     rptRoundRect(ctx,PAD,y,cw,26+DIS_KEYS.length*22+14,5,RC.darkBg,RC.gold,1);
     ctx.fillStyle=RC.gold; ctx.font='700 8px "DM Mono",monospace';
-    ctx.fillText('WEATHER RISK \u00b7 '+wxData.place.toUpperCase()+' (ZIP '+wxData.zip+')',PAD+16,y+16);
+    ctx.fillText('WEATHER RISK \u00b7 '+wxData.place.toUpperCase()+(wxData.zip?' (ZIP '+wxData.zip+')':' (GPS)'),PAD+16,y+16);
     ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='8px "DM Mono",monospace';
     ctx.fillText('7-day avg high: '+wxData.avgHigh+'\u00b0F \u00b7 avg RH: '+wxData.avgRH+'% \u00b7 precip days: '+wxData.precipDays+'/7',PAD+16,y+30);
     var wy=y+44;
