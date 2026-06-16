@@ -263,7 +263,7 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
   </div>
   <div class="credit-panel" id="panel-immob">
     <div class="info-row" style="margin-top:6px;">
-      <div class="info-text">High C:N residue ties up 10-25 lbs N/ac during decomposition. No-till into living green cover (cereal rye, winter wheat) is especially high risk. Add this N to your requirement.</div>
+      <div class="info-text">High C:N residue ties up 10-25 lbs N/ac during decomposition. No-till into living green cover (cereal rye, winter wheat) is especially high risk. This N is counted as a loss from the N available to your crop.</div>
     </div>
     <div class="fg" style="margin-bottom:6px;">
       <label>Residue / Cover Situation</label>
@@ -273,7 +273,7 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
         <button class="seg-btn" data-val="15">No-Till High Residue</button>
         <button class="seg-btn" data-val="5">Min-Till Corn Stubble</button>
       </div>
-      <div class="hint" id="immob-hint">Immobilization credit added to N requirement</div>
+      <div class="hint" id="immob-hint">High-residue N tie-up counted as a loss of available N</div>
     </div>
   </div>
 
@@ -301,6 +301,16 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
     <div class="fg" style="margin-bottom:4px;">
       <label>N Credit from MAP + DAP</label>
       <input type="text" id="pCreditDisplay" readonly placeholder="0 lbs N/ac">
+    </div>
+    <div class="fg" style="margin-bottom:4px;">
+      <label>MAP / DAP Application Timing</label>
+      <div class="seg grid2" id="seg-pTiming">
+        <button class="seg-btn on" data-val="same">Same as Primary N</button>
+        <button class="seg-btn" data-val="fall_cold">Fall &lt;50F Soil</button>
+        <button class="seg-btn" data-val="fall_warm">Fall &gt;50F Soil</button>
+        <button class="seg-btn" data-val="spring">Spring Pre-Plant</button>
+      </div>
+      <div class="fert-note" id="ptiming-note">Uses the same timing as your primary N source. Choose a separate timing if P was applied at a different time (e.g. fall DAP with spring N).</div>
     </div>
   </div>
 
@@ -545,15 +555,15 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
       <div><div class="bk-name">Soybean N Credit</div><div class="bk-sub">Reduces N requirement</div></div>
       <div class="bk-val" id="bk-soycredit" style="color:var(--gold-d);">--</div>
     </div>
-    <div class="bk-row" id="bk-row-immob" style="display:none;">
-      <div><div class="bk-name">Immobilization Penalty</div><div class="bk-sub">High-residue N tie-up added to req.</div></div>
-      <div class="bk-val" id="bk-immob" style="color:var(--amber);">--</div>
-    </div>
     <div class="bk-row" id="bk-row-hybrid" style="display:none;">
       <div><div class="bk-name">Hybrid N Adjustment</div><div class="bk-sub" id="bk-hybrid-sub">Ear type / NUE</div></div>
       <div class="bk-val" id="bk-hybrid">--</div>
     </div>
     <div class="bk-hdr" style="background:#2a2218;">Loss Pathways</div>
+    <div class="bk-row" id="bk-row-immob" style="display:none;">
+      <div><div class="bk-name">Immobilization (N tie-up)</div><div class="bk-sub">High-residue temporary tie-up</div></div>
+      <div class="bk-val neg" id="bk-immob">--</div>
+    </div>
     <div class="bk-row" id="bk-row-timing" style="display:none;">
       <div><div class="bk-name">Fall Timing Loss Premium</div><div class="bk-sub">Applied before freeze-up risk</div></div>
       <div class="bk-val neg" id="bk-timing">--</div>
@@ -805,7 +815,10 @@ document.addEventListener('DOMContentLoaded', function() {
     uan28:    {d:1.00,l:1.00,v:0.85},
     uan32:    {d:1.00,l:1.00,v:0.85},
     ams:      {d:1.00,l:0.90,v:0.15},
-    other:    {d:1.00,l:1.00,v:0.80}
+    other:    {d:1.00,l:1.00,v:0.80},
+    // MAP/DAP starter N is ammonium and placed/incorporated with the P band:
+    // behaves like anhydrous — must nitrify before loss, negligible volatilization.
+    map_dap:  {d:0.80,l:0.60,v:0.00}
   };
 
   var TIMING_LOSS = {
@@ -825,7 +838,8 @@ document.addEventListener('DOMContentLoaded', function() {
     rainfall:'none', satDays:'0', soilTemp:'cold', growthStage:'v3',
     symptoms:'none', cropColor:'dark', soyYield:'50',
     earType:'semi', prodClass:'med', som:'2', tillage:'conv',
-    appTiming:'spring', exposeDays:'0', immob:'10', manureType:'hog_liquid'
+    appTiming:'spring', exposeDays:'0', immob:'10', manureType:'hog_liquid',
+    pTiming:'same'
   };
   var lastR = null;
 
@@ -1001,9 +1015,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   /* ── CALC ── */
   // Productivity rating multiplier: how well hybrid converts N in this soil class
-  function nRequired(yg, tex, soyCr, immobPenalty, manureN) {
+  function nRequired(yg, tex, soyCr, manureN) {
     var adj={sand:20, sandy_loam:12, loam:0, silt_loam:0, scl:5, clay_loam:-5, sicl:-8, clay:-10};
-    var credits = soyCr + manureN - immobPenalty;
+    var credits = soyCr + manureN;
     var base09 = yg * 0.9 + (adj[tex]||0) - credits;
     var base08 = yg * 0.8 + (adj[tex]||0) - credits;
     return {
@@ -1013,8 +1027,8 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 
-  function calcLoss(nApp, inhib, uanStab, timingKey) {
-    var s=state, p=SOURCE_PROFILE[s.fertSource]||SOURCE_PROFILE.other;
+  function calcLoss(nApp, inhib, uanStab, timingKey, profile) {
+    var s=state, p=profile||SOURCE_PROFILE[s.fertSource]||SOURCE_PROFILE.other;
     var satDaysRaw=parseFloat(s.satDays)||0;
     // Research: 2-day lag before soil reaches anaerobic conditions (Purdue 2021, Laboski 2016)
     var satDays=Math.max(0, satDaysRaw-2);
@@ -1090,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ge('soyCreditDisplay').value=useSoy?soyCr+' lbs N/ac ('+state.soyYield+' bpa)':'';
 
     var immobPenalty=useImmob?parseInt(state.immob):0;
-    ge('immob-hint').textContent=useImmob?'Adding '+immobPenalty+' lbs N/ac to requirement':'';
+    ge('immob-hint').textContent=useImmob?immobPenalty+' lbs N/ac tied up by residue (counted as loss)':'';
 
     var manureN=useManure?(parseFloat(ge('manureN').value)||0):0;
 
@@ -1118,8 +1132,27 @@ document.addEventListener('DOMContentLoaded', function() {
     var nTotal=nPrim+pCr;
     if(!nTotal||!yg) return;
 
-    var loss=calcLoss(nTotal,inhib,uanStab,state.appTiming);
-    var nReqObj=nRequired(yg,state.soilTexture,soyCr,immobPenalty,manureN+somCredit);
+    // Calculate loss for each N pool with its correct source chemistry, then combine.
+    // Primary N uses the selected fertilizer source; MAP/DAP N is ammonium (like anhydrous).
+    var lossPrim=calcLoss(nPrim,inhib,uanStab,state.appTiming,null);
+    // MAP/DAP timing: 'same' inherits the primary N timing; otherwise its own.
+    var pTimingKey=(state.pTiming==='same'||!state.pTiming)?state.appTiming:state.pTiming;
+    var lossP=pCr>0?calcLoss(pCr,inhib,uanStab,pTimingKey,SOURCE_PROFILE.map_dap)
+                   :{denit:0,leach:0,volat:0,timingExtra:0,inhibSav:0,totalLoss:0,remaining:0};
+    // Immobilization: high-residue N tie-up. Treated as a (temporary) loss of
+    // available N rather than an increase in requirement. Capped at remaining N.
+    var immobLoss=Math.min(immobPenalty, lossPrim.remaining+lossP.remaining);
+    var loss={
+      denit:lossPrim.denit+lossP.denit,
+      leach:lossPrim.leach+lossP.leach,
+      volat:lossPrim.volat+lossP.volat,
+      timingExtra:lossPrim.timingExtra+lossP.timingExtra,
+      immob:immobLoss,
+      inhibSav:lossPrim.inhibSav+lossP.inhibSav,
+      totalLoss:lossPrim.totalLoss+lossP.totalLoss+immobLoss,
+      remaining:Math.max(0,(lossPrim.remaining+lossP.remaining)-immobLoss)
+    };
+    var nReqObj=nRequired(yg,state.soilTexture,soyCr,manureN+somCredit);
     var nReq=nReqObj.mid; /* use midpoint for side-dress calc */
     var sdN=Math.max(0,nReq-loss.remaining);
     var risk=riskPct(loss,nTotal);
@@ -1152,6 +1185,7 @@ document.addEventListener('DOMContentLoaded', function() {
       symptoms:state.symptoms,cropColor:state.cropColor,
       earType:state.earType,som:state.som,
       appTiming:state.appTiming,exposeDays:state.exposeDays,
+      pTiming:state.pTiming,pTimingResolved:pTimingKey,
       useP:useP,useSoy:useSoy,useImmob:useImmob,useManure:useManure,
       sdCost:sdCost,nProductCost:nProductCost,appCostVal:appCostVal,beYield:beYield,yieldAtRisk:yieldAtRisk,
       cornPrice:cornP,nCost:nCostVal
@@ -1166,7 +1200,6 @@ document.addEventListener('DOMContentLoaded', function() {
     var subParts=[];
     if(soyCr>0) subParts.push('-'+soyCr+' soy');
     if(somCredit>0) subParts.push('-'+somCredit+' SOM');
-    if(immobPenalty>0) subParts.push('+'+immobPenalty+' immob');
     subParts.push('0.8-0.9 lbs N/bu');
     ge('r-needed-sub').textContent=subParts.join(' / ');
 
@@ -1192,9 +1225,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Soybean: reduces requirement
     ge('bk-row-soycredit').style.display=soyCr>0?'':'none';
     ge('bk-soycredit').textContent=soyCr>0?soyCr+' lbs N/ac (reduces req.)':'';
-    // Immobilization: increases requirement (amber — penalty)
-    ge('bk-row-immob').style.display=immobPenalty>0?'':'none';
-    ge('bk-immob').textContent=immobPenalty>0?'+'+immobPenalty+' lbs N/ac (adds to req.)':'';
+    // Immobilization: temporary N tie-up — shown as a loss pathway
+    ge('bk-row-immob').style.display=loss.immob>0?'':'none';
+    ge('bk-immob').textContent=loss.immob>0?'-'+loss.immob+' lbs/ac':'';
     // Ear type affects timing urgency only — shown in the ear type note, not as an N adjustment
     ge('bk-row-hybrid').style.display='none';
     ge('bk-row-timing').style.display=loss.timingExtra>0?'':'none';
@@ -1443,10 +1476,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // Credits reducing requirement — gold
       r.manureN>0?{n:'Manure N Credit',v:r.manureN+' lbs N/ac (reduces req.)',c:C.goldD}:null,
       r.soyCr>0?{n:'Soybean N Credit',v:r.soyCr+' lbs N/ac (reduces req.)',c:C.goldD}:null,
-      // Immob adds to requirement — amber
-      r.immobPenalty>0?{n:'Immobilization Penalty',v:'+'+r.immobPenalty+' lbs N/ac (adds to req.)',c:C.amber}:null,
-      // Hybrid adj — amber if adds, gold if reduces
       // True losses from budget — red
+      (r.loss.immob>0)?{n:'Immobilization (N tie-up)',v:'-'+r.loss.immob+' lbs/ac',c:C.red}:null,
       r.loss.timingExtra>0?{n:'Fall Timing N Loss',v:'-'+r.loss.timingExtra+' lbs/ac',c:C.red}:null,
       {n:'Denitrification',v:'-'+r.loss.denit+' lbs/ac',c:C.red},
       {n:'Leaching',v:'-'+r.loss.leach+' lbs/ac',c:C.red},
@@ -1514,8 +1545,11 @@ document.addEventListener('DOMContentLoaded', function() {
       ['Tillage',({conv:'Conventional',min:'Min/Strip-Till',notill:'No-Till'}[r.tillage])||r.tillage],
       ['SOM Rate',r.somEffRate+' lbs N/1% SOM ('+({conv:'conv',min:'min-till',notill:'no-till'}[r.tillage])+')'],
       ['Soil OM',({1:'Under 1.5%',2:'1.5-2.5%',3:'2.5-3.5%',4:'3.5-4.5%',5:'Over 4.5%'}[r.som])||r.som],
-      ['Symptoms',({none:'None',mild:'Mild',moderate:'Moderate',severe:'Severe'}[r.symptoms])||r.symptoms]
-    ];
+      ['Symptoms',({none:'None',mild:'Mild',moderate:'Moderate',severe:'Severe'}[r.symptoms])||r.symptoms],
+      (r.useP&&r.pTiming&&r.pTiming!=='same')
+        ? ['MAP/DAP Timing',({fall_cold:'Fall Cold (<50F)',fall_warm:'Fall Warm (>50F)',spring:'Spring Pre-Plant'}[r.pTiming])||r.pTiming]
+        : null
+    ].filter(function(c){return c;});
     var cw2=(cw-10)/2;
     conds.forEach(function(c,i){
       var tx2=i%2===0?PAD:PAD+cw2+10,ry=y+Math.floor(i/2)*28;
@@ -1618,7 +1652,8 @@ document.addEventListener('DOMContentLoaded', function() {
     {id:'seg-appTiming',   key:'appTiming'},
     {id:'seg-immob',       key:'immob'},
     {id:'seg-manureType',  key:'manureType'},
-    {id:'seg-tillage',     key:'tillage'}
+    {id:'seg-tillage',     key:'tillage'},
+    {id:'seg-pTiming',     key:'pTiming'}
   ];
   segGroups.forEach(function(grp){
     var el=ge(grp.id);if(!el) return;
@@ -1639,6 +1674,15 @@ document.addEventListener('DOMContentLoaded', function() {
         updateUANRow();
       }
       if(grp.key==='appTiming') ge('timing-note').innerHTML=TIMING_NOTES[btn.dataset.val]||'';
+      if(grp.key==='pTiming'){
+        var pNotes={
+          same:'Uses the same timing as your primary N source. Choose a separate timing if P was applied at a different time (e.g. fall DAP with spring N).',
+          fall_cold:'Fall MAP/DAP applied to cold soil (<50F): ammonium-N nitrifies slowly but is exposed to winter/spring leaching. Moderate added loss risk.',
+          fall_warm:'Fall MAP/DAP applied to warm soil (>50F): ammonium-N nitrifies before freeze-up — highest added loss risk for starter N.',
+          spring:'Spring-applied MAP/DAP: baseline loss risk for the ammonium-N. Best retention window.'
+        };
+        ge('ptiming-note').innerHTML=pNotes[btn.dataset.val]||'';
+      }
 
       if(grp.key==='som') recalc(false); /* recalc updates som-hint with full context */
       if(grp.key==='tillage'){
@@ -1662,7 +1706,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       if(grp.key==='soyyield'&&ge('toggle-soycredit').checked) ge('soyCreditDisplay').value=(SOY_CREDIT[btn.dataset.val]||20)+' lbs N/ac';
       if(grp.key==='growthStage') updateStageCallout();
-      if(grp.key==='immob') ge('immob-hint').textContent=ge('toggle-immob').checked?'Adding '+btn.dataset.val+' lbs N/ac to requirement':'';
+      if(grp.key==='immob') ge('immob-hint').textContent=ge('toggle-immob').checked?btn.dataset.val+' lbs N/ac tied up by residue (counted as loss)':'';
       recalc(false);
     });
   });
