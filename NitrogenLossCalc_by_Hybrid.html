@@ -436,7 +436,8 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
       <button class="seg-btn" data-val="moderate">Moderate</button>
       <button class="seg-btn" data-val="severe">Severe</button>
     </div>
-    <div class="hint">Yellowing / firing from bottom leaves upward</div>
+    <div class="hint">Classic N deficiency fires from the leaf tip down the midrib (a "V"), starting on the lowest leaves and moving up. Select what you see on the worst-affected plants.</div>
+    <div class="stage-callout ok" id="symptom-desc" style="margin-top:10px;display:none;"></div>
   </div>
   <div class="fg" style="margin-top:12px;">
     <label>Overall Crop Color</label>
@@ -887,7 +888,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!tbl) {
       var msg = (stage === 'v3')
         ? 'Growth stage is before the V6–V10 yield-reduction model window. At V3–V4 ear components are not yet being set, and N deficiency this early is largely recoverable with prompt rescue N. No structural yield-loss estimate is shown.'
-        : 'Growth stage is past the V6–V10 yield-reduction model window. At V11+ ear row and kernel number are already set; any structural loss is locked in and rescue N protects only grain fill. No matrix estimate is shown — evaluate yield impact case by case.';
+        : 'Growth stage is past the V6–V10 yield-reduction model window. At V11+ ear row and kernel number are already set, so essentially all structural yield loss is locked in. Rescue N protects only grain fill, and recoverable yield is minimal — a rescue application rarely pencils out at this stage. No numeric estimate is shown; treat the economics with caution and rely on field judgment.';
       return { inRange:false, msg:msg };
     }
     var band = tbl[symptoms] || [0,0];
@@ -1087,6 +1088,24 @@ document.addEventListener('DOMContentLoaded', function() {
     sc.textContent=si.msg;
   }
 
+  /* ── SYMPTOM DESCRIPTORS ──
+     Scouting definitions tied to the yield-reduction severity scores, so reps
+     pick the right level. Each: cls (callout color), label, and what to look for. */
+  var SYMPTOM_DESC = {
+    none:     {cls:'ok',   t:'None — plants uniformly dark green, no firing on lower leaves.'},
+    mild:     {cls:'ok',   t:'Mild — tip-and-midrib "V" firing on only the lowest 1–2 leaves. Rest of the plant still green. Confined to the very bottom of the canopy.'},
+    moderate: {cls:'warn', t:'Moderate — distinct firing on the lower 3–4 leaves; the lowest leaf may be browning/necrotic. Affecting the lower third of the canopy.'},
+    severe:   {cls:'urgent',t:'Severe — firing advancing into the mid-canopy (5+ leaves), plant overall pale and often stunted. Firing approaching the ear leaf is the most yield-critical sign.'}
+  };
+  function updateSymptomDesc() {
+    var d = SYMPTOM_DESC[state.symptoms];
+    var el = ge('symptom-desc');
+    if (!el || !d) return;
+    el.style.display='block';
+    el.className='stage-callout '+d.cls;
+    el.textContent=d.t;
+  }
+
   /* ── CALC ── */
   // Productivity rating multiplier: how well hybrid converts N in this soil class
   function nRequired(yg, tex, soyCr, manureN) {
@@ -1244,6 +1263,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fixed hybrids: kernel count set early, more stable under N stress
     var earRiskMult={flex:1.25, semi:1.00, fixed:0.80}[state.earType]||1.00;
     var yieldAtRisk=sdN>0?Math.round((sdN/1.2)*stageFactor*earRiskMult):0;
+    /* Yield reduction from symptoms (shared by yield block + ROI cap) */
+    var ylObj=yieldReduction(state.growthStage,state.symptoms,state.earType,yg);
+    /* OPTION 3 — cap ROI's claimed payoff at recoverable yield.
+       When symptoms are present and the stage is inside the V6–V10 window,
+       structural loss is already locked in and rescue N cannot buy it back.
+       So the breakeven may only credit the recoverable (grain-fill) fraction.
+       This never raises yieldAtRisk — it only caps it downward. */
+    var yieldAtRiskRaw=yieldAtRisk;
+    var roiCapped=false;
+    if(ylObj.inRange && state.symptoms!=='none' && yg>0){
+      var recovBu=Math.round(ylObj.recovBu);
+      if(recovBu<yieldAtRisk){ yieldAtRisk=recovBu; roiCapped=true; }
+    }
     /* Update total cost display */
     if(ge('totalSdCost')) ge('totalSdCost').value = sdN>0&&sdCost>0 ? '$'+sdCost.toFixed(2)+'/ac' : '';
 
@@ -1257,7 +1289,7 @@ document.addEventListener('DOMContentLoaded', function() {
       drainage:state.drainage,rainfall:state.rainfall,satDays:state.satDays,
       soilTemp:state.soilTemp,growthStage:state.growthStage,
       symptoms:state.symptoms,cropColor:state.cropColor,
-      yl:yieldReduction(state.growthStage,state.symptoms,state.earType,yg),
+      yl:ylObj,roiCapped:roiCapped,yieldAtRiskRaw:yieldAtRiskRaw,
       earType:state.earType,som:state.som,
       appTiming:state.appTiming,exposeDays:state.exposeDays,
       pTiming:state.pTiming,pTimingResolved:pTimingKey,
@@ -1361,10 +1393,11 @@ document.addEventListener('DOMContentLoaded', function() {
       var profitable=yieldAtRisk>beYield;
       ge('econ-breakeven').className='econ-val '+(profitable?'':'warn');
       var verdict='';
+      var capNote=roiCapped?' Note: yield at risk is capped at the recoverable (grain-fill) portion — ~'+Math.round(ylObj.lockedBu)+' bu/ac of structural loss is already locked in at this stage and cannot be recovered by rescue N.':'';
       if(profitable){
-        verdict='Application is economically justified. Expected yield at risk (~'+yieldAtRisk+' bu/ac) exceeds the '+beYield.toFixed(1)+' bu/ac breakeven at $'+cornP+'/bu corn ($'+nProductCost.toFixed(2)+' N + $'+appCostVal.toFixed(2)+' application = $'+sdCost.toFixed(2)+'/ac total).';
+        verdict='Application is economically justified. Expected yield at risk (~'+yieldAtRisk+' bu/ac) exceeds the '+beYield.toFixed(1)+' bu/ac breakeven at $'+cornP+'/bu corn ($'+nProductCost.toFixed(2)+' N + $'+appCostVal.toFixed(2)+' application = $'+sdCost.toFixed(2)+'/ac total).'+capNote;
       } else if(beYield>0){
-        verdict='Marginal economics. Need '+beYield.toFixed(1)+' bu/ac response but only ~'+yieldAtRisk+' bu/ac at risk at this growth stage. Total cost $'+sdCost.toFixed(2)+'/ac includes $'+appCostVal.toFixed(2)+' application. Verify prices and consider hybrid ear type and field symptoms before applying.';
+        verdict='Marginal economics. Need '+beYield.toFixed(1)+' bu/ac response but only ~'+yieldAtRisk+' bu/ac recoverable at this growth stage. Total cost $'+sdCost.toFixed(2)+'/ac includes $'+appCostVal.toFixed(2)+' application. Verify prices and consider hybrid ear type and field symptoms before applying.'+capNote;
       }
       ge('econ-verdict').textContent=verdict;
     } else {
@@ -1373,7 +1406,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /* Yield reduction from N deficiency */
     var ylCard=ge('yield-loss-card');
-    var yl=yieldReduction(state.growthStage,state.symptoms,state.earType,yg);
+    var yl=ylObj;
     if(state.symptoms==='none'&&yl.inRange){
       // No symptoms observed — nothing to report
       ylCard.style.display='none';
@@ -1489,8 +1522,8 @@ document.addEventListener('DOMContentLoaded', function() {
        out-of-range = note block). Skipped entirely when no symptoms observed. */
     var yl=r.yl||{inRange:false};
     var showYL=(r.symptoms&&r.symptoms!=='none');
-    var ylH=showYL?(yl.inRange?220:96):0;
-    var estH=272+80+90+240+180+ylH+160+(r.notes?80:0)+(r.sdN>0&&r.cornPrice>0&&r.nCost>0?120:0)+80;
+    var ylH=showYL?(yl.inRange?220:140):0;
+    var estH=272+80+90+240+180+ylH+160+(r.notes?80:0)+(r.sdN>0&&r.cornPrice>0&&r.nCost>0?(r.roiCapped?140:120):0)+80;
     var cv=ge('report-canvas');
     cv.width=W*sc;cv.height=estH*sc;cv.style.width=W+'px';cv.style.height=estH+'px';
     var ctx=cv.getContext('2d');ctx.scale(sc,sc);
@@ -1620,22 +1653,32 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.fillStyle=C.muted;ctx.font='8px "DM Mono",monospace';
         ctx.fillText('Symptoms: '+sevLbl+'  |  ~'+unrecPct+'% of loss is structural and not recoverable even with perfectly timed rescue N.',PAD,y+10);y+=26;
       } else {
-        roundRect(ctx,PAD,y,cw,52,6,'#fff8e1','#ffca28',1.5);
-        ctx.fillStyle='#5d4037';ctx.font='10px "DM Mono",monospace';
-        wrapText(ctx,yl.msg,PAD+14,y+18,cw-28,13);y+=64;
+        ctx.font='10px "DM Mono",monospace';
+        var nLines=wrapText({measureText:ctx.measureText.bind(ctx),fillText:function(){}},yl.msg,0,0,cw-28,13);
+        var boxH=Math.max(52, nLines*13+22);
+        roundRect(ctx,PAD,y,cw,boxH,6,'#fff8e1','#ffca28',1.5);
+        ctx.fillStyle='#5d4037';
+        wrapText(ctx,yl.msg,PAD+14,y+18,cw-28,13);y+=boxH+12;
       }
     }
     /* Econ */
     if(r.sdN>0&&r.cornPrice>0&&r.nCost>0){
-      roundRect(ctx,PAD,y,cw,106,6,'#1a2218','#2e7d32',1.5);
+      var econBoxH=r.roiCapped?124:106;
+      roundRect(ctx,PAD,y,cw,econBoxH,6,'#1a2218','#2e7d32',1.5);
       ctx.fillStyle='#81c784';ctx.font='700 7px "DM Mono",monospace';ctx.fillText('ECONOMIC BREAKEVEN ANALYSIS',PAD+14,y+14);
       ctx.fillStyle=C.white;ctx.font='10px "DM Mono",monospace';
       ctx.fillText('N product cost: $'+(r.nProductCost||0).toFixed(2)+'/ac  |  Application cost: $'+(r.appCostVal||18).toFixed(2)+'/ac',PAD+14,y+30);
       ctx.fillText('Total side-dress cost: $'+r.sdCost.toFixed(2)+'/ac  |  Corn: $'+r.cornPrice+'/bu',PAD+14,y+46);
-      ctx.fillText('Breakeven yield response: '+r.beYield.toFixed(1)+' bu/ac  |  Yield at risk: ~'+r.yieldAtRisk+' bu/ac',PAD+14,y+62);
+      var riskLbl=r.roiCapped?'Recoverable yield at risk':'Yield at risk';
+      ctx.fillText('Breakeven yield response: '+r.beYield.toFixed(1)+' bu/ac  |  '+riskLbl+': ~'+r.yieldAtRisk+' bu/ac',PAD+14,y+62);
       var evText=r.yieldAtRisk>r.beYield?'Economically justified — expected response exceeds breakeven.':'Marginal — verify prices, growth stage, and symptoms before applying.';
       ctx.fillStyle=r.yieldAtRisk>r.beYield?'#a5d6a7':'#ffcc80';ctx.font='700 10px "DM Mono",monospace';
-      ctx.fillText(evText,PAD+14,y+82);y+=118;
+      ctx.fillText(evText,PAD+14,y+82);
+      if(r.roiCapped){
+        ctx.fillStyle='#ffcc80';ctx.font='9px "DM Mono",monospace';
+        ctx.fillText('Capped at recoverable yield — ~'+Math.round((r.yl&&r.yl.lockedBu)||0)+' bu/ac structural loss is locked in and cannot be recovered by rescue N.',PAD+14,y+100);
+      }
+      y+=econBoxH+12;
     }
     /* Conditions */
     ctx.fillStyle=C.muted;ctx.font='700 8px "DM Mono",monospace';ctx.fillText('FIELD CONDITIONS RECORDED',PAD,y+10);y+=18;
@@ -1811,6 +1854,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       if(grp.key==='soyyield'&&ge('toggle-soycredit').checked) ge('soyCreditDisplay').value=(SOY_CREDIT[btn.dataset.val]||20)+' lbs N/ac';
       if(grp.key==='growthStage') updateStageCallout();
+      if(grp.key==='symptoms') updateSymptomDesc();
       if(grp.key==='immob') ge('immob-hint').textContent=ge('toggle-immob').checked?btn.dataset.val+' lbs N/ac tied up by residue (counted as loss)':'';
       recalc(false);
     });
@@ -1873,6 +1917,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   /* init */
   updateStageCallout();
+  updateSymptomDesc();
   updateUANRow();
 
 }); // end DOMContentLoaded
