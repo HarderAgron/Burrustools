@@ -206,6 +206,7 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
 .wx-dis-tile.risk-ext .wx-dis-risk-lbl{color:#ff6060;}
 .wx-dis-hrs{font-family:"DM Mono",monospace;font-size:8px;color:rgba(255,255,255,0.3);margin-top:3px;}
 .wx-dis-mod{font-family:"DM Mono",monospace;font-size:8px;font-weight:700;margin-top:2px;}
+.wx-dis-cond{font-family:"DM Mono",monospace;font-size:7px;letter-spacing:0.5px;color:rgba(255,255,255,0.35);margin-top:3px;}
 .wx-dis-tile.risk-low .wx-dis-mod{color:#4caf6a;}
 .wx-dis-tile.risk-mod .wx-dis-mod{color:#e8a030;}
 .wx-dis-tile.risk-high .wx-dis-mod,.wx-dis-tile.risk-ext .wx-dis-mod{color:#e87878;}
@@ -909,14 +910,14 @@ function stageFractionRemaining(stage){
 // ═══════════════════════════════════════════════════════
 
 const MODEL = {
-  ts:   {baseRate: 0.054, name: "Tar Spot"},
-  sr:   {baseRate: 0.048, name: "Southern Rust"},
-  nclb: {baseRate: 0.036, name: "N. Corn Leaf Blight"},
-  gls:  {baseRate: 0.028, name: "Gray Leaf Spot"},
+  ts:   {baseRate: 0.080, name: "Tar Spot"},        // Paul et al. 2022 upper range
+  sr:   {baseRate: 0.070, name: "Southern Rust"},   // Raymundo & Hooker 1981 upper range
+  nclb: {baseRate: 0.055, name: "N. Corn Leaf Blight"}, // Lipps & Mills 2002 upper range
+  gls:  {baseRate: 0.045, name: "Gray Leaf Spot"},  // Hurley et al. 1994 upper range
 };
 const STAGE_MOD = {
   'V6-V10': 0.3,
-  'VT-R1':  1.5,
+  'VT-R1':  1.7,  // peak risk — kernel set and grain fill initiation
   'R2-R3':  1.0,
   'R4-R5':  0.4,
 };
@@ -1452,6 +1453,12 @@ function renderWxResults() {
   document.getElementById('wx-precip-days').textContent = wxData.precipDays;
 
   // Per-disease risk tiles
+  const WX_CONDITIONS = {
+    ts:   '60–80°F · RH ≥80% · near-dew',
+    sr:   '75–95°F · RH ≥75% · dew ≥60°F',
+    nclb: '65–80°F · RH ≥90%',
+    gls:  '≥70°F · RH ≥90%',
+  };
   const grid = document.getElementById('wx-dis-risks');
   grid.innerHTML = DIS_KEYS.map(k => {
     const hrs = wxData.favHours[k];
@@ -1461,6 +1468,7 @@ function renderWxResults() {
       <div class="wx-dis-risk-lbl">${risk.level}</div>
       <div class="wx-dis-hrs">${hrs} favorable hrs / 7 days</div>
       <div class="wx-dis-mod">${risk.label}</div>
+      <div class="wx-dis-cond">${WX_CONDITIONS[k]}</div>
     </div>`;
   }).join('');
 
