@@ -599,6 +599,43 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
   <!-- Growth stage statement -->
   <div id="stage-result-callout" class="stage-callout ok" style="margin-bottom:12px;display:none;"></div>
 
+  <!-- Yield reduction from N deficiency -->
+  <div class="card" id="yield-loss-card" style="display:none;">
+    <div class="ctitle">Estimated Yield Reduction from N Deficiency</div>
+    <div id="yl-out-range" style="display:none;">
+      <div class="results-grid" style="margin-bottom:10px;">
+        <div class="res-tile primary">
+          <div class="res-lbl">Total Est. Yield Loss</div>
+          <div class="res-val" id="yl-total">--</div>
+          <div class="res-unit" id="yl-total-bu"></div>
+        </div>
+        <div class="res-tile bad">
+          <div class="res-lbl">Locked In (Structural)</div>
+          <div class="res-val" id="yl-locked" style="color:var(--red);">--</div>
+          <div class="res-unit" id="yl-locked-bu"></div>
+        </div>
+      </div>
+      <div class="breakdown" style="margin-bottom:10px;">
+        <div class="bk-hdr">Recoverable vs. Locked In</div>
+        <div class="bk-row">
+          <div><div class="bk-name">Structural loss (locked in)</div><div class="bk-sub">Ear row / kernel number set during deficiency — rescue N cannot rebuild</div></div>
+          <div class="bk-val neg" id="yl-locked-row">--</div>
+        </div>
+        <div class="bk-row">
+          <div><div class="bk-name">Recoverable with timely rescue N</div><div class="bk-sub">Grain-fill component still protectable</div></div>
+          <div class="bk-val pos" id="yl-recov-row">--</div>
+        </div>
+      </div>
+      <div class="stage-callout warn" id="yl-note" style="margin-top:0;"></div>
+    </div>
+    <div id="yl-out-msg" class="info-row" style="display:none;">
+      <div class="info-text" id="yl-msg-text"></div>
+    </div>
+    <div class="fert-note" style="margin-top:10px;">
+      Literature-derived ranges (ISU, U of I, Nebraska; Ferrie/AgWeb on ear-type sensitivity). Symptom onset lags actual N stress by several days, so estimates are conservative on timing. Assumes confirmed N deficiency — rule out sulfur (shows on new growth), compaction, and drought-limited uptake first.
+    </div>
+  </div>
+
   <!-- Economic threshold -->
   <div class="econ-box" id="econ-box" style="display:none;">
     <div class="econ-title">Economic Breakeven Analysis</div>
@@ -619,14 +656,6 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
       <div class="econ-val" id="econ-protected">--</div>
     </div>
     <div id="econ-verdict" style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;margin-top:8px;line-height:1.6;border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;"></div>
-  </div>
-
-  <div class="card" id="rate-card" style="display:none;">
-    <div class="ctitle">Side-Dress Rate by Product</div>
-    <div id="rate-rows"></div>
-    <div class="info-row" style="margin-top:8px;">
-      <div class="info-text">Side-dress by V8-V10 for maximum N uptake. UAN: use Y-Drop or dribble band. Anhydrous: apply between rows when corn is under V6.</div>
-    </div>
   </div>
 
   <div class="dl-row" id="dl-row" style="display:none;">
@@ -832,6 +861,51 @@ document.addEventListener('DOMContentLoaded', function() {
     v10:{cls:'warn',  msg:'V9-V10: Late application window. N uptake efficiency declining. Fixed-ear hybrids: limited ROI expected. Flex hybrids: some response still possible for kernel fill. Equipment damage risk increasing.'},
     v12:{cls:'urgent',msg:'V11+: Past economic side-dress window for most situations. Fixed-ear hybrids: do not apply. Flex hybrids in severe deficiency: Y-Drop UAN only if justified by symptoms and price ratio. Significant yield loss may already be locked in.'}
   };
+
+  /* ── YIELD REDUCTION MATRIX (V6–V10) ──
+     Estimates yield loss from visual N-deficiency symptoms, split into a
+     structural (locked-in) fraction and a grain-fill (recoverable) fraction.
+     Defined only for V5-V6, V7-V8, V9-V10 (the V6–V10 model window).
+     For V3-V4 (pre-window) and V11+ (post-window) no point estimate is
+     returned — caller shows an informational note instead.
+     Each entry: [lo, hi] = total yield loss % of attainable yield, ASSUMING a
+     timely rescue N application follows (literature-derived: ISU / U of
+     Illinois / Nebraska extension).
+     YIELD_UNRECOV = fraction of total loss rescue N CANNOT recover, because
+     ear structural components (row number, kernel number) were set during the
+     deficiency window. Highest at V6–V7, declining through V10. */
+  var YIELD_LOSS = {
+    v5:  { none:[0,0], mild:[2,6], moderate:[6,14], severe:[14,25] }, /* V5-V6 */
+    v8:  { none:[0,0], mild:[2,5], moderate:[5,12], severe:[12,22] }, /* V7-V8 */
+    v10: { none:[0,0], mild:[1,4], moderate:[4,10], severe:[10,18] }  /* V9-V10 */
+  };
+  var YIELD_UNRECOV  = { v5:0.60, v8:0.48, v10:0.32 };
+  var YIELD_EAR_MULT = { flex:1.20, semi:1.00, fixed:0.80 };
+
+  function yieldReduction(stage, symptoms, earType, yieldGoal) {
+    var tbl = YIELD_LOSS[stage];
+    if (!tbl) {
+      var msg = (stage === 'v3')
+        ? 'Growth stage is before the V6–V10 yield-reduction model window. At V3–V4 ear components are not yet being set, and N deficiency this early is largely recoverable with prompt rescue N. No structural yield-loss estimate is shown.'
+        : 'Growth stage is past the V6–V10 yield-reduction model window. At V11+ ear row and kernel number are already set; any structural loss is locked in and rescue N protects only grain fill. No matrix estimate is shown — evaluate yield impact case by case.';
+      return { inRange:false, msg:msg };
+    }
+    var band = tbl[symptoms] || [0,0];
+    var earMult = YIELD_EAR_MULT[earType] || 1.0;
+    var loPct = band[0]*earMult, hiPct = band[1]*earMult;
+    var midPct = (loPct+hiPct)/2;
+    var unrecov = YIELD_UNRECOV[stage] || 0.4;
+    var lockedPct = midPct*unrecov, recovPct = midPct-lockedPct;
+    var yg = yieldGoal>0 ? yieldGoal : 0;
+    return {
+      inRange:true, loPct:loPct, hiPct:hiPct, midPct:midPct,
+      lockedPct:lockedPct, recovPct:recovPct,
+      midBu:    yg ? yg*midPct/100    : 0,
+      lockedBu: yg ? yg*lockedPct/100 : 0,
+      recovBu:  yg ? yg*recovPct/100  : 0,
+      severity:symptoms
+    };
+  }
 
   var state = {
     fertSource:'anhydrous', soilTexture:'silt_loam', drainage:'moderate',
@@ -1183,6 +1257,7 @@ document.addEventListener('DOMContentLoaded', function() {
       drainage:state.drainage,rainfall:state.rainfall,satDays:state.satDays,
       soilTemp:state.soilTemp,growthStage:state.growthStage,
       symptoms:state.symptoms,cropColor:state.cropColor,
+      yl:yieldReduction(state.growthStage,state.symptoms,state.earType,yg),
       earType:state.earType,som:state.som,
       appTiming:state.appTiming,exposeDays:state.exposeDays,
       pTiming:state.pTiming,pTimingResolved:pTimingKey,
@@ -1296,24 +1371,33 @@ document.addEventListener('DOMContentLoaded', function() {
       eb.style.display='none';
     }
 
-    /* Rate table */
-    var rc2=ge('rate-card');
-    if(sdN>0){
-      rc2.style.display='block';
-      var rates=[
-        {name:'Anhydrous NH3 (82-0-0)',    fmt:function(n){return Math.round(n/0.82)+' lbs/ac';}},
-        {name:'Urea (46-0-0)',             fmt:function(n){return Math.round(n/0.46)+' lbs/ac';}},
-        {name:'UAN 28%',                   fmt:function(n){return (n/3.1).toFixed(1)+' gal/ac';}},
-        {name:'UAN 32%',                   fmt:function(n){return (n/3.57).toFixed(1)+' gal/ac';}},
-        {name:'Ammonium Nitrate (34-0-0)', fmt:function(n){return Math.round(n/0.34)+' lbs/ac';}},
-        {name:'AMS (21-0-0-24S)',          fmt:function(n){return Math.round(n/0.21)+' lbs/ac';}},
-        {name:'ATS (12-0-0-26S)',          fmt:function(n){return Math.round(n/0.12)+' lbs/ac  — blend w/ UAN';}}
-      ];
-      ge('rate-rows').innerHTML=rates.map(function(r){
-        return '<div class="bk-row"><div class="bk-name">'+r.name+'</div>'
-              +'<div class="bk-val neutral" style="font-weight:700;">'+r.fmt(sdN)+'</div></div>';
-      }).join('');
-    } else { rc2.style.display='none'; }
+    /* Yield reduction from N deficiency */
+    var ylCard=ge('yield-loss-card');
+    var yl=yieldReduction(state.growthStage,state.symptoms,state.earType,yg);
+    if(state.symptoms==='none'&&yl.inRange){
+      // No symptoms observed — nothing to report
+      ylCard.style.display='none';
+    } else {
+      ylCard.style.display='block';
+      var ylRange=ge('yl-out-range'),ylMsg=ge('yl-out-msg');
+      if(!yl.inRange){
+        ylRange.style.display='none';
+        ylMsg.style.display='flex';
+        ge('yl-msg-text').textContent=yl.msg;
+      } else {
+        ylMsg.style.display='none';
+        ylRange.style.display='block';
+        var pct=function(v){return v.toFixed(v<10?1:0)+'%';};
+        ge('yl-total').textContent=pct(yl.loPct)+'–'+pct(yl.hiPct);
+        ge('yl-total-bu').textContent=yg?('~'+yl.midBu.toFixed(1)+' bu/ac (midpoint)'):'enter yield goal for bu/ac';
+        ge('yl-locked').textContent=pct(yl.lockedPct);
+        ge('yl-locked-bu').textContent=yg?('~'+yl.lockedBu.toFixed(1)+' bu/ac'):'of attainable yield';
+        ge('yl-locked-row').textContent=pct(yl.lockedPct)+(yg?'  (~'+yl.lockedBu.toFixed(1)+' bu/ac)':'');
+        ge('yl-recov-row').textContent=pct(yl.recovPct)+(yg?'  (~'+yl.recovBu.toFixed(1)+' bu/ac)':'');
+        var unrecPctOfTotal=Math.round((YIELD_UNRECOV[state.growthStage]||0.4)*100);
+        ge('yl-note').textContent='At this stage ~'+unrecPctOfTotal+'% of the loss is structural and will not be recovered even with a perfectly timed rescue N application — ear row and kernel number set during the deficiency window cannot be rebuilt. The remainder is grain-fill loss that timely rescue N can protect.';
+      }
+    }
 
     ge('dl-row').style.display='flex';
     if(show){
@@ -1400,17 +1484,13 @@ document.addEventListener('DOMContentLoaded', function() {
     var recClass=r.sdN===0?'low':r.sdN<=40?'med':'high';
     var recColor=recClass==='low'?C.green:recClass==='med'?C.amber:C.red;
     var recBg=recClass==='low'?'#edf7ed':recClass==='med'?'#fff8e1':'#fdecea';
-    var rates=r.sdN>0?[
-      {n:'Anhydrous NH3 (82-0-0)',    v:Math.round(r.sdN/0.82)+' lbs/ac'},
-      {n:'Urea (46-0-0)',             v:Math.round(r.sdN/0.46)+' lbs/ac'},
-      {n:'UAN 28%',                   v:(r.sdN/3.1).toFixed(1)+' gal/ac'},
-      {n:'UAN 32%',                   v:(r.sdN/3.57).toFixed(1)+' gal/ac'},
-      {n:'Ammonium Nitrate (34-0-0)', v:Math.round(r.sdN/0.34)+' lbs/ac'},
-      {n:'AMS (21-0-0-24S)',          v:Math.round(r.sdN/0.21)+' lbs/ac'},
-      {n:'ATS (12-0-0-26S)',          v:Math.round(r.sdN/0.12)+' lbs/ac'}
-    ]:[];
     var si=STAGE_INFO[r.growthStage]||{cls:'ok',msg:''};
-    var estH=272+80+90+240+180+(r.sdN>0?rates.length*36+80:0)+160+(r.notes?80:0)+(r.sdN>0&&r.cornPrice>0&&r.nCost>0?120:0)+80;
+    /* Yield-reduction block: render when symptoms present (in-range = data block;
+       out-of-range = note block). Skipped entirely when no symptoms observed. */
+    var yl=r.yl||{inRange:false};
+    var showYL=(r.symptoms&&r.symptoms!=='none');
+    var ylH=showYL?(yl.inRange?220:96):0;
+    var estH=272+80+90+240+180+ylH+160+(r.notes?80:0)+(r.sdN>0&&r.cornPrice>0&&r.nCost>0?120:0)+80;
     var cv=ge('report-canvas');
     cv.width=W*sc;cv.height=estH*sc;cv.style.width=W+'px';cv.style.height=estH+'px';
     var ctx=cv.getContext('2d');ctx.scale(sc,sc);
@@ -1508,17 +1588,42 @@ document.addEventListener('DOMContentLoaded', function() {
     ctx.fillStyle=stageColor;ctx.font='700 7px "DM Mono",monospace';ctx.fillText('GROWTH STAGE ASSESSMENT',PAD+14,y+14);
     ctx.fillStyle='#333';ctx.font='10px "DM Mono",monospace';
     wrapText(ctx,si.msg,PAD+14,y+28,cw-28,14);y+=60;
-    /* Rate table */
-    if(rates.length){
-      ctx.fillStyle=C.muted;ctx.font='700 8px "DM Mono",monospace';ctx.fillText('SIDE-DRESS RATES BY PRODUCT',PAD,y+10);y+=18;
-      roundRect(ctx,PAD,y,cw,28,3,C.dbg,null);
-      ctx.fillStyle=C.gold;ctx.font='700 8px "DM Mono",monospace';ctx.fillText('PRODUCT',PAD+12,y+18);
-      ctx.textAlign='right';ctx.fillText('RATE NEEDED',W-PAD-12,y+18);ctx.textAlign='left';y+=28;
-      rates.forEach(function(r2,i){
-        roundRect(ctx,PAD,y,cw,32,0,i%2===0?C.panel:'#f5f0e8',C.border,0.5);
-        ctx.fillStyle=C.dark;ctx.font='12px "Source Serif 4",serif';ctx.fillText(r2.n,PAD+12,y+21);
-        ctx.textAlign='right';ctx.font='700 12px "DM Mono",monospace';ctx.fillText(r2.v,W-PAD-12,y+21);ctx.textAlign='left';y+=32;
-      });y+=12;
+    /* Yield reduction from N deficiency */
+    if(showYL){
+      ctx.fillStyle=C.muted;ctx.font='700 8px "DM Mono",monospace';ctx.fillText('ESTIMATED YIELD REDUCTION FROM N DEFICIENCY',PAD,y+10);y+=18;
+      if(yl.inRange){
+        var pf=function(v){return v.toFixed(v<10?1:0)+'%';};
+        var sevLbl=({mild:'Mild',moderate:'Moderate',severe:'Severe'}[yl.severity])||yl.severity;
+        var hasBu=r.yg>0;
+        /* Two summary tiles: total range + locked-in */
+        var ytw=(cw-10)/2;
+        roundRect(ctx,PAD,y,ytw,66,6,C.dbg,C.gold,2);
+        ctx.fillStyle='rgba(184,151,42,0.6)';ctx.font='7px "DM Mono",monospace';ctx.fillText('TOTAL EST. YIELD LOSS',PAD+12,y+15);
+        ctx.fillStyle=C.goldL;ctx.font='700 22px "Playfair Display",serif';ctx.fillText(pf(yl.loPct)+'–'+pf(yl.hiPct),PAD+12,y+42);
+        ctx.fillStyle='rgba(184,151,42,0.5)';ctx.font='8px "DM Mono",monospace';
+        ctx.fillText(hasBu?('~'+yl.midBu.toFixed(1)+' bu/ac midpoint'):'of attainable yield',PAD+12,y+58);
+        roundRect(ctx,PAD+ytw+10,y,ytw,66,6,C.panel,C.red,1.5);
+        ctx.fillStyle=C.muted;ctx.font='7px "DM Mono",monospace';ctx.fillText('LOCKED IN (STRUCTURAL)',PAD+ytw+22,y+15);
+        ctx.fillStyle=C.red;ctx.font='700 22px "Playfair Display",serif';ctx.fillText(pf(yl.lockedPct),PAD+ytw+22,y+42);
+        ctx.fillStyle=C.muted;ctx.font='8px "DM Mono",monospace';
+        ctx.fillText(hasBu?('~'+yl.lockedBu.toFixed(1)+' bu/ac'):'not recoverable',PAD+ytw+22,y+58);
+        y+=78;
+        /* Recoverable / locked rows */
+        [{n:'Structural loss — locked in',v:pf(yl.lockedPct)+(hasBu?'  (~'+yl.lockedBu.toFixed(1)+' bu/ac)':''),c:C.red},
+         {n:'Recoverable with timely rescue N',v:pf(yl.recovPct)+(hasBu?'  (~'+yl.recovBu.toFixed(1)+' bu/ac)':''),c:C.green}
+        ].forEach(function(row){
+          roundRect(ctx,PAD,y,cw,30,3,C.panel,C.border,1);
+          ctx.fillStyle=C.dark;ctx.font='12px "Source Serif 4",serif';ctx.fillText(row.n,PAD+12,y+20);
+          ctx.fillStyle=row.c;ctx.font='700 12px "DM Mono",monospace';ctx.textAlign='right';ctx.fillText(row.v,W-PAD-12,y+20);ctx.textAlign='left';y+=32;
+        });
+        var unrecPct=Math.round((({v5:0.60,v8:0.48,v10:0.32}[r.growthStage])||0.4)*100);
+        ctx.fillStyle=C.muted;ctx.font='8px "DM Mono",monospace';
+        ctx.fillText('Symptoms: '+sevLbl+'  |  ~'+unrecPct+'% of loss is structural and not recoverable even with perfectly timed rescue N.',PAD,y+10);y+=26;
+      } else {
+        roundRect(ctx,PAD,y,cw,52,6,'#fff8e1','#ffca28',1.5);
+        ctx.fillStyle='#5d4037';ctx.font='10px "DM Mono",monospace';
+        wrapText(ctx,yl.msg,PAD+14,y+18,cw-28,13);y+=64;
+      }
     }
     /* Econ */
     if(r.sdN>0&&r.cornPrice>0&&r.nCost>0){
