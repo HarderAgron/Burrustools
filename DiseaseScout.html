@@ -910,10 +910,10 @@ function stageFractionRemaining(stage){
 // ═══════════════════════════════════════════════════════
 
 const MODEL = {
-  ts:   {baseRate: 0.080, name: "Tar Spot"},        // Paul et al. 2022 upper range
-  sr:   {baseRate: 0.070, name: "Southern Rust"},   // Raymundo & Hooker 1981 upper range
-  nclb: {baseRate: 0.055, name: "N. Corn Leaf Blight"}, // Lipps & Mills 2002 upper range
-  gls:  {baseRate: 0.045, name: "Gray Leaf Spot"},  // Hurley et al. 1994 upper range
+  ts:   {avgRate: 0.054, baseRate: 0.080, name: "Tar Spot"},        // Paul et al. 2022 (avg → upper)
+  sr:   {avgRate: 0.048, baseRate: 0.070, name: "Southern Rust"},   // Raymundo & Hooker 1981 (avg → upper)
+  nclb: {avgRate: 0.036, baseRate: 0.055, name: "N. Corn Leaf Blight"}, // Lipps & Mills 2002 (avg → upper)
+  gls:  {avgRate: 0.028, baseRate: 0.045, name: "Gray Leaf Spot"},  // Hurley et al. 1994 (avg → upper)
 };
 const STAGE_MOD = {
   'V6-V10': 0.3,
@@ -942,19 +942,26 @@ const SEV_PCT_MAP = {
 
 function calcLoss(key, sevLabel, canopy, stage, yieldBu, hybridRating) {
   const sev = SEV_PCT_MAP[sevLabel] || 0;
-  if (sev === 0 || !yieldBu || !stage) return {lossPct: 0, lossBu: 0};
-  const base      = MODEL[key].baseRate;
+  if (sev === 0 || !yieldBu || !stage) return {lossPct: 0, lossBu: 0, lossBuLow: 0, lossBuHigh: 0, lossPctLow: 0, lossPctHigh: 0};
+  const avgBase   = MODEL[key].avgRate;
+  const sevBase   = MODEL[key].baseRate;
   const stageMod  = STAGE_MOD[stage] || 1.0;
   const canopyMod = CANOPY_MOD[canopy] || 1.0;
   const tolMod    = toleranceMod(key, hybridRating);
   const progMod   = PROG_MOD[(obs[key]&&obs[key].prog)||'stable'] || 1.0;
   // If hybrid RM known, use grain-fill-days-remaining to scale the stage modifier
   const dtmScale  = selHybrid ? stageFractionRemaining(stage) : 1.0;
-  const lossBu = yieldBu * (sev / 100) * base * stageMod * canopyMod * tolMod * progMod * dtmScale;
-  const lossPct = (lossBu / yieldBu) * 100;
+  const common    = yieldBu * (sev / 100) * stageMod * canopyMod * tolMod * progMod * dtmScale;
+  const lossBuLow  = common * avgBase;   // average-rate end of range
+  const lossBuHigh = common * sevBase;   // severe-rate end of range
   return {
-    lossPct: Math.round(lossPct * 10) / 10,
-    lossBu:  Math.round(lossBu * 10) / 10,
+    // primary (severe) figures retained for back-compat
+    lossPct:    Math.round((lossBuHigh / yieldBu) * 100 * 10) / 10,
+    lossBu:     Math.round(lossBuHigh * 10) / 10,
+    lossBuLow:  Math.round(lossBuLow * 10) / 10,
+    lossBuHigh: Math.round(lossBuHigh * 10) / 10,
+    lossPctLow:  Math.round((lossBuLow / yieldBu) * 100 * 10) / 10,
+    lossPctHigh: Math.round((lossBuHigh / yieldBu) * 100 * 10) / 10,
   };
 }
 
@@ -1521,24 +1528,32 @@ function updateYieldLoss(){
   const tiles=[];
   const detailRows=[];
 
+  let totalBuLow=0;
   present.forEach(k=>{
     const rating=selHybrid?selHybrid[k]:null;
     const result=calcLoss(k, obs[k].sev, obs[k].layer, curStage, yieldBu||200, rating);
     const wx=wxMult(k);
-    const adjBu=Math.round(result.lossBu*wx*10)/10;
-    const adjPct=Math.round(result.lossPct*wx*10)/10;
-    totalBu+=adjBu;
-    const isHigh=adjBu>=(yieldBu?yieldBu*0.10:20); // only red above 10% yield loss
-    const wxTag=wx!==1.0?`<div style="font-family:'DM Mono',monospace;font-size:7px;opacity:0.6;margin-top:2px;">wx ×${wx.toFixed(1)}</div>`:'';
+    const adjBuLow=Math.round(result.lossBuLow*wx*10)/10;
+    const adjBuHigh=Math.round(result.lossBuHigh*wx*10)/10;
+    const adjBu=adjBuHigh;
+    const adjPct=Math.round(result.lossPctHigh*wx*10)/10;
+    totalBu+=adjBuHigh;
+    totalBuLow+=adjBuLow;
+    const isHigh=adjBu>=(yieldBu?yieldBu*0.10:20);
+    const wxTag=wx!==1.0?`<div style="font-family:'DM Mono',monospace;font-size:7px;opacity:0.6;margin-top:2px;">wx \u00d7${wx.toFixed(1)}</div>`:'';
     const cornPriceNow = parseFloat(document.getElementById('corn-price').value)||null;
-    const dLoss = cornPriceNow ? '$'+(adjBu*cornPriceNow).toFixed(2) : null;
+    const valDisplay = yieldBu
+      ? (cornPriceNow
+          ? '$'+Math.round(adjBuLow*cornPriceNow)+'\u2013$'+Math.round(adjBuHigh*cornPriceNow)
+          : adjBuLow.toFixed(1)+'\u2013'+adjBuHigh.toFixed(1))
+      : '\u2014';
     tiles.push(`<div class="ylb-tile${isHigh?' alert':''}">
       <div class="ylb-tile-lbl">${DIS_NAMES[k]}</div>
-      <div class="ylb-tile-val">${yieldBu?(dLoss||adjBu.toFixed(1)):'—'}</div>
-      <div class="ylb-tile-unit">${yieldBu?(dLoss?'est. $/ac':' bu/ac lost'):'enter yield'}</div>
+      <div class="ylb-tile-val" style="font-size:15px;">${valDisplay}</div>
+      <div class="ylb-tile-unit">${yieldBu?(cornPriceNow?'est. $/ac range':'bu/ac range'):'enter yield'}</div>
       ${wxTag}
     </div>`);
-    detailRows.push({name:DIS_NAMES[k], pct:adjPct, bu:adjBu, sev:obs[k].sev, layer:obs[k].layer});
+    detailRows.push({name:DIS_NAMES[k], pct:adjPct, bu:adjBu, buLow:adjBuLow, buHigh:adjBuHigh, sev:obs[k].sev, layer:obs[k].layer});
   });
 
   document.getElementById('ylb-dis-grid').innerHTML=tiles.join('');
@@ -1547,18 +1562,24 @@ function updateYieldLoss(){
   const irrigLabel = isIrrigated ? ' · Irrigated' : '';
 
   if(yieldBu){
-    const totalPct=(totalBu/yieldBu*100);
-    const dollarLoss = cornPrice ? (totalBu * cornPrice).toFixed(2) : null;
-    document.getElementById('ylb-bu-total').textContent = dollarLoss
-      ? '$' + parseFloat(dollarLoss).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})
-      : totalBu.toFixed(1);
-    document.getElementById('ylb-bu-unit').textContent = dollarLoss
-      ? `est. dollar loss/ac · ${totalBu.toFixed(1)} bu/ac`
-      : 'bu/ac estimated loss';
+    const totalPctLow=(totalBuLow/yieldBu*100);
+    const totalPctHigh=(totalBu/yieldBu*100);
+    if(cornPrice){
+      const dLow=Math.round(totalBuLow*cornPrice);
+      const dHigh=Math.round(totalBu*cornPrice);
+      document.getElementById('ylb-bu-total').textContent =
+        '$'+dLow.toLocaleString('en-US')+'\u2013$'+dHigh.toLocaleString('en-US');
+      document.getElementById('ylb-bu-unit').textContent =
+        `est. $/ac range \u00b7 ${totalBuLow.toFixed(1)}\u2013${totalBu.toFixed(1)} bu/ac`;
+    } else {
+      document.getElementById('ylb-bu-total').textContent =
+        totalBuLow.toFixed(1)+'\u2013'+totalBu.toFixed(1);
+      document.getElementById('ylb-bu-unit').textContent = 'bu/ac estimated loss range';
+    }
     document.getElementById('ylb-pct-total').textContent =
-      `${totalPct.toFixed(1)}% of ${yieldBu} bu/ac${irrigLabel}`;
+      `${totalPctLow.toFixed(1)}\u2013${totalPctHigh.toFixed(1)}% of ${yieldBu} bu/ac${irrigLabel}`;
   } else {
-    document.getElementById('ylb-bu-total').textContent='Enter yield →';
+    document.getElementById('ylb-bu-total').textContent='Enter yield \u2192';
     document.getElementById('ylb-pct-total').textContent='Add yield goal above for bu/ac estimate';
   }
 
@@ -1827,8 +1848,10 @@ function renderCanvas(){
       var rating=selHybrid?selHybrid[k]:null;
       var baseR=calcLoss(k,obs[k].sev,obs[k].layer,curStage,yieldBu||200,rating);
       var wxm=wxMult(k);
-      var lBu=Math.round(baseR.lossBu*wxm*10)/10;
-      var lPct=Math.round(baseR.lossPct*wxm*10)/10;
+      var lBuLow=Math.round(baseR.lossBuLow*wxm*10)/10;
+      var lBu=Math.round(baseR.lossBuHigh*wxm*10)/10;
+      var lPct=Math.round(baseR.lossPctHigh*wxm*10)/10;
+      var lPctLow=Math.round(baseR.lossPctLow*wxm*10)/10;
       var isHi=lBu>=(yieldBu?yieldBu*0.05:10);
       var progLbl={slow:'Slow',stable:'Stable',moderate:'Moderate',rapid:'Rapid'}[obs[k].prog||'stable']||'Stable';
 
@@ -1851,7 +1874,7 @@ function renderCanvas(){
       var rx=PAD+20+bw+30;
       ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='8px "DM Mono",monospace'; ctx.fillText('EST. LOSS',rx,dy+16);
       ctx.fillStyle=RC.goldL; ctx.font='900 26px "Playfair Display",serif';
-      ctx.fillText(yieldBu?lBu.toFixed(1)+'':lPct.toFixed(1)+'%',rx,dy+46);
+      ctx.fillText(yieldBu?(lBuLow.toFixed(1)+'\u2013'+lBu.toFixed(1)):(lPctLow.toFixed(1)+'\u2013'+lPct.toFixed(1)+'%'),rx,dy+46);
       ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='8px "DM Mono",monospace';
       ctx.fillText(yieldBu?'bu/ac':'% (enter yield)',rx,dy+60);
       dy+=82;
@@ -1861,16 +1884,18 @@ function renderCanvas(){
 
   // ── TOTAL LOSS ───────────────────────────────────────────────────────────
   if(present.length&&yieldBu){
-    var totalBu=0;
+    var totalBu=0, totalBuLow=0;
     present.forEach(function(k){
       var r=selHybrid?selHybrid[k]:null;
-      totalBu+=Math.round(calcLoss(k,obs[k].sev,obs[k].layer,curStage,yieldBu,r).lossBu*wxMult(k)*10)/10;
+      var cl=calcLoss(k,obs[k].sev,obs[k].layer,curStage,yieldBu,r);
+      totalBu+=Math.round(cl.lossBuHigh*wxMult(k)*10)/10;
+      totalBuLow+=Math.round(cl.lossBuLow*wxMult(k)*10)/10;
     });
     rptRoundRect(ctx,PAD,y,cw,58,5,'rgba(184,151,42,0.1)',RC.gold,1.5);
     ctx.fillStyle=RC.muted; ctx.font='8px "DM Mono",monospace'; ctx.fillText('TOTAL ESTIMATED YIELD LOSS',PAD+18,y+16);
-    var dollarC=cornPrice?('$'+(totalBu*cornPrice).toFixed(2)+'/ac'):null;
-    ctx.fillStyle=RC.goldD; ctx.font='900 30px "Playfair Display",serif';
-    ctx.fillText(dollarC||(totalBu.toFixed(1)+' bu/ac'),PAD+18,y+48);
+    var dollarC=cornPrice?('$'+Math.round(totalBuLow*cornPrice)+'\u2013$'+Math.round(totalBu*cornPrice)+'/ac'):null;
+    ctx.fillStyle=RC.goldD; ctx.font='900 26px "Playfair Display",serif';
+    ctx.fillText(dollarC||(totalBuLow.toFixed(1)+'\u2013'+totalBu.toFixed(1)+' bu/ac'),PAD+18,y+48);
     ctx.textAlign='right';
     ctx.fillStyle=RC.muted; ctx.font='9px "DM Mono",monospace';
     ctx.fillText(totalBu.toFixed(1)+' bu/ac \u00b7 '+(totalBu/yieldBu*100).toFixed(1)+'% of yield goal'+(isIrrigated?' \u00b7 Irrigated':''),W-PAD-16,y+28);
