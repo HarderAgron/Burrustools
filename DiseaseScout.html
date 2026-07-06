@@ -266,9 +266,9 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
       </div>
       <div id="gps-status" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:6px;min-height:12px;text-align:center;"></div>
       <div id="gps-result" style="display:none;margin-top:10px;">
-        <div style="position:relative;aspect-ratio:1/1;">
-          <div id="field-sat-wrap" style="border-radius:10px;overflow:auto;-webkit-overflow-scrolling:touch;border:1.5px solid var(--border);background:#1c1a16;position:absolute;inset:0;touch-action:pan-x pan-y;">
-            <img id="field-sat-img" style="display:block;width:250%;max-width:none;height:auto;" alt="Field satellite view" draggable="false">
+        <div style="position:relative;">
+          <div id="field-sat-wrap" style="border-radius:10px;overflow:auto;-webkit-overflow-scrolling:touch;border:1.5px solid var(--border);background:#1c1a16;aspect-ratio:1/1;touch-action:pan-x pan-y;">
+            <img id="field-sat-img" style="display:block;width:150%;max-width:none;height:auto;" alt="Field satellite view" draggable="false">
           </div>
           <div style="position:absolute;bottom:10px;left:10px;display:flex;flex-direction:column;gap:6px;z-index:5;pointer-events:none;">
             <button onclick="zoomSat(1)" style="pointer-events:auto;width:38px;height:38px;border-radius:8px;border:1.5px solid var(--gold);background:rgba(28,26,22,0.85);color:var(--gold-l);font-size:22px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.4);">+</button>
