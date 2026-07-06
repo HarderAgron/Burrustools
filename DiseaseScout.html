@@ -266,9 +266,15 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
       </div>
       <div id="gps-status" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:6px;min-height:12px;text-align:center;"></div>
       <div id="gps-result" style="display:none;margin-top:10px;">
-        <div id="field-sat-wrap" style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);background:#1c1a16;">
+        <div id="field-sat-wrap" style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);background:#1c1a16;position:relative;">
           <img id="field-sat-img" style="width:100%;display:block;" alt="Field satellite view">
         </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+          <span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);white-space:nowrap;">TIGHT</span>
+          <input type="range" id="sat-zoom" min="0" max="6" step="1" value="2" style="flex:1;accent-color:var(--gold);" oninput="adjustSatZoom(this.value)">
+          <span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);white-space:nowrap;">WIDE</span>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);text-align:center;margin-top:2px;" id="sat-zoom-lbl">~500 m view</div>
         <div id="field-loc-lbl" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dark);text-align:center;margin-top:6px;font-weight:600;"></div>
         <div id="field-coord-lbl" style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);text-align:center;margin-top:2px;"></div>
       </div>
@@ -1543,10 +1549,15 @@ function captureFieldLocation(){
   }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
 }
 
-function loadFieldSatellite(lat, lon){
+// Zoom levels: index -> half-width in degrees (~ view size). Higher = wider.
+var SAT_ZOOM_STEPS = [0.0011, 0.0016, 0.0022, 0.0033, 0.0050, 0.0075, 0.0110];
+var SAT_ZOOM_LABELS = ['~250 m', '~350 m', '~500 m', '~750 m', '~1.1 km', '~1.7 km', '~2.5 km'];
+
+function loadFieldSatellite(lat, lon, zoomIdx){
   // Esri World Imagery static export (free, no API key)
-  // Build a small bounding box around the point (~350m field view)
-  var d = 0.0022; // ~250m in degrees latitude
+  if(zoomIdx==null){ var ze=document.getElementById('sat-zoom'); zoomIdx = ze?parseInt(ze.value):2; }
+  var d = SAT_ZOOM_STEPS[zoomIdx] || 0.0022;
+  var lbl=document.getElementById('sat-zoom-lbl'); if(lbl) lbl.textContent=(SAT_ZOOM_LABELS[zoomIdx]||'')+' view';
   var bbox = (lon-d)+','+(lat-d)+','+(lon+d)+','+(lat+d);
   var url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export'
     + '?bbox=' + bbox
@@ -1584,6 +1595,11 @@ function loadFieldSatellite(lat, lon){
     btn.textContent = 'Update Field Location';
   };
   loader.src = url;
+}
+
+function adjustSatZoom(idx){
+  if(fieldLoc.lat==null) return;
+  loadFieldSatellite(fieldLoc.lat, fieldLoc.lon, parseInt(idx));
 }
 
 function reverseGeocodeField(lat, lon){
