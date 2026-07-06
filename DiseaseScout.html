@@ -266,14 +266,18 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
       </div>
       <div id="gps-status" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:6px;min-height:12px;text-align:center;"></div>
       <div id="gps-result" style="display:none;margin-top:10px;">
-        <div id="field-sat-wrap" style="border-radius:10px;overflow:auto;-webkit-overflow-scrolling:touch;border:1.5px solid var(--border);background:#1c1a16;position:relative;aspect-ratio:1/1;touch-action:pan-x pan-y pinch-zoom;">
+        <div id="field-sat-wrap" style="border-radius:10px;overflow:auto;-webkit-overflow-scrolling:touch;border:1.5px solid var(--border);background:#1c1a16;position:relative;aspect-ratio:1/1;touch-action:pan-x pan-y;">
           <img id="field-sat-img" style="display:block;width:200%;max-width:none;height:auto;" alt="Field satellite view" draggable="false">
+          <div style="position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:6px;z-index:5;">
+            <button onclick="zoomSat(1)" style="width:34px;height:34px;border-radius:8px;border:1.5px solid var(--gold);background:rgba(28,26,22,0.82);color:var(--gold-l);font-size:20px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>
+            <button onclick="zoomSat(-1)" style="width:34px;height:34px;border-radius:8px;border:1.5px solid var(--gold);background:rgba(28,26,22,0.82);color:var(--gold-l);font-size:22px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">\u2212</button>
+          </div>
         </div>
         <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px;">
           <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);" id="sat-zoom-lbl">~500 m view</div>
           <button onclick="recenterSat()" style="font-family:'DM Mono',monospace;font-size:7px;letter-spacing:0.5px;color:var(--gold-d);background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;cursor:pointer;">RECENTER</button>
         </div>
-        <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);text-align:center;margin-top:3px;opacity:0.7;">Scroll to reposition \u00b7 pinch to zoom</div>
+        <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);text-align:center;margin-top:3px;opacity:0.7;">Scroll to reposition \u00b7 +/\u2212 to zoom</div>
         <div id="field-loc-lbl" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dark);text-align:center;margin-top:6px;font-weight:600;"></div>
         <div id="field-coord-lbl" style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);text-align:center;margin-top:2px;"></div>
       </div>
@@ -1566,6 +1570,8 @@ function loadFieldSatellite(lat, lon){
   loader.onload = function(){
     res.style.display = 'block';
     fieldLoc.baseImgObj = loader;
+    fieldLoc.zoomPct = 200;
+    img.style.width = '200%';
     img.src = url;
     // Center the scroll on the middle (GPS point) after layout settles
     setTimeout(function(){
@@ -1627,6 +1633,29 @@ function captureSatView(){
     sImg.onload = function(){ fieldLoc.satImgObj = sImg; };
     sImg.src = fieldLoc.satDataUrl;
   } catch(e){ /* tainted canvas - report skips image */ }
+}
+
+function zoomSat(dir){
+  var wrap = document.getElementById('field-sat-wrap');
+  var img = document.getElementById('field-sat-img');
+  if(!wrap || !img || !fieldLoc.baseImgObj) return;
+  // Current zoom = image width as % (100% = fit, higher = zoomed in)
+  var cur = fieldLoc.zoomPct || 200;
+  var next = dir > 0 ? cur * 1.35 : cur / 1.35;
+  next = Math.max(100, Math.min(800, next)); // 100% (full ~1.3km) to 800% (deep zoom)
+  fieldLoc.zoomPct = next;
+  // Remember the current center point (as a fraction of scrollable area)
+  var cxFrac = (wrap.scrollLeft + wrap.clientWidth/2) / (wrap.scrollWidth || 1);
+  var cyFrac = (wrap.scrollTop + wrap.clientHeight/2) / (wrap.scrollHeight || 1);
+  img.style.width = next + '%';
+  // Re-center on the same fractional point after the width change reflows
+  requestAnimationFrame(function(){
+    wrap.scrollLeft = cxFrac * wrap.scrollWidth - wrap.clientWidth/2;
+    wrap.scrollTop  = cyFrac * wrap.scrollHeight - wrap.clientHeight/2;
+    updateSatLabel();
+    clearTimeout(fieldLoc._zTimer);
+    fieldLoc._zTimer = setTimeout(captureSatView, 200);
+  });
 }
 
 function recenterSat(){
