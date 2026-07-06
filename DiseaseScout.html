@@ -262,7 +262,7 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
       </div>
       <div class="fg" style="margin-top:10px;">
         <label>Field Location</label>
-        <button id="gps-btn" class="dlbtn gold" style="width:100%;justify-content:center;" onclick="captureFieldLocation()">\ud83d\udccd Get Field Location &amp; Satellite Image</button>
+        <button id="gps-btn" class="dlbtn gold" style="width:100%;justify-content:center;" onclick="captureFieldLocation()">Get Field Location</button>
       </div>
       <div id="gps-status" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:6px;min-height:12px;text-align:center;"></div>
       <div id="gps-result" style="display:none;margin-top:10px;">
@@ -345,14 +345,8 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
     <!-- WEATHER RISK CARD -->
     <div class="card" id="wx-card-outer">
       <div class="ctitle">Weather Risk · 7-Day Forecast</div>
-      <div class="tip">Use your current GPS location or enter a ZIP code to fetch a 7-day forecast. The model calculates disease-favorable hours and adjusts your yield loss estimate accordingly.</div>
-      <button class="wx-fetch-btn" id="wx-fetch-btn-gps" onclick="fetchWeatherGPS()" style="width:100%;margin-bottom:8px;">📍 Use My GPS Location</button>
-      <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1.5px;color:rgba(255,255,255,0.25);text-align:center;margin-bottom:8px;">— OR —</div>
-      <div class="wx-zip-row">
-        <input class="wx-zip-inp" id="wx-zip" type="text" inputmode="numeric" maxlength="5" placeholder="ZIP Code" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-        <button class="wx-fetch-btn" id="wx-fetch-btn-zip" onclick="fetchWeather()">Get Forecast</button>
-      </div>
-      <div class="wx-status" id="wx-status"></div>
+      <div class="tip">The 7-day forecast loads automatically when you capture your field location above. The model calculates disease-favorable hours and adjusts your yield loss estimate accordingly.</div>
+      <div class="wx-status" id="wx-status">Capture field location above to load the forecast.</div>
       <div class="wx-results" id="wx-results">
         <div class="wx-header">
           <div>
@@ -1529,11 +1523,16 @@ function captureFieldLocation(){
   navigator.geolocation.getCurrentPosition(function(pos){
     var lat = pos.coords.latitude, lon = pos.coords.longitude;
     fieldLoc.lat = lat; fieldLoc.lon = lon;
-    status.textContent = 'Location found \u00b7 loading satellite image\u2026';
+    status.textContent = 'Location found \u00b7 loading satellite + forecast\u2026';
     document.getElementById('field-coord-lbl').textContent =
       lat.toFixed(5)+'\u00b0'+(lat>=0?'N':'S')+' \u00b7 '+Math.abs(lon).toFixed(5)+'\u00b0'+(lon>=0?'E':'W');
     loadFieldSatellite(lat, lon);
     reverseGeocodeField(lat, lon);
+    // Also fetch the 7-day weather forecast from the same coordinates
+    var placeLabel = lat.toFixed(4)+', '+lon.toFixed(4);
+    if(typeof loadForecast === 'function'){
+      loadForecast(lat, lon, placeLabel, null).catch(function(){});
+    }
   }, function(err){
     btn.disabled = false;
     var msg = 'Could not get location.';
@@ -1574,7 +1573,7 @@ function loadFieldSatellite(lat, lon){
     } catch(e){ fieldLoc.satDataUrl = null; }
     status.textContent = '';
     btn.disabled = false;
-    btn.textContent = '\ud83d\udccd Update Field Location';
+    btn.textContent = 'Update Field Location';
   };
   loader.onerror = function(){
     // Still show the image directly even if data-url conversion fails
@@ -1582,7 +1581,7 @@ function loadFieldSatellite(lat, lon){
     img.src = url;
     status.textContent = 'Satellite image loaded (may not embed in report).';
     btn.disabled = false;
-    btn.textContent = '\ud83d\udccd Update Field Location';
+    btn.textContent = 'Update Field Location';
   };
   loader.src = url;
 }
@@ -1904,6 +1903,7 @@ function renderCanvas(){
   drawDisAgroBar(ctx,PAD,y,cw); y+=72;
 
   // ── FIELD SATELLITE IMAGE ────────────────────────────────────────────────
+  try{
   if(fieldLoc.satImgObj){
     var satW=cw, satH=Math.round(cw*0.42);
     var sx=PAD, sy=y;
@@ -1933,6 +1933,7 @@ function renderCanvas(){
     ctx.fillText('Source: Esri World Imagery',W-PAD,sy+satH+11); ctx.textAlign='left';
     y+=satH+18;
   }
+  }catch(_satErr){ ctx.textAlign='left'; }
 
   // ── FIELD INFO BAR ───────────────────────────────────────────────────────
   var dtmVal=(selHybrid&&curStage)?getDaysToMaturity(selHybrid,curStage)+' days':'--';
@@ -2142,7 +2143,11 @@ function resetAll(){
   document.querySelectorAll('.pp-item').forEach(e=>e.classList.remove('selected'));
   document.querySelectorAll('.pp-none-btn').forEach(e=>{e.classList.add('on');e.classList.remove('selected');});
   wxData=null;
-  document.getElementById('wx-zip').value='';
+  var _wz=document.getElementById('wx-zip'); if(_wz) _wz.value='';
+  fieldLoc={lat:null,lon:null,place:'',satDataUrl:null,satImgObj:null};
+  var _gr=document.getElementById('gps-result'); if(_gr) _gr.style.display='none';
+  var _gs=document.getElementById('gps-status'); if(_gs) _gs.textContent='';
+  var _gb=document.getElementById('gps-btn'); if(_gb){_gb.disabled=false;_gb.textContent='Get Field Location';}
   document.getElementById('wx-results').classList.remove('on');
   document.getElementById('wx-status').textContent='';
 
