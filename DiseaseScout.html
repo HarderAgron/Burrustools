@@ -2102,7 +2102,7 @@ function renderCanvas(){
   }
 
   // ── FOOTER ────────────────────────────────────────────────────────────────
-  var finalY=drawDisFooter(ctx,PAD,W,y+8,grower,field,date);
+  var finalY=drawDisFooter(ctx,PAD,W,y+8,grower,(fieldLoc.place||""),date);
 
   // Trim canvas to content
   var nc=document.createElement('canvas');
