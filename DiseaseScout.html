@@ -266,8 +266,8 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
       </div>
       <div id="gps-status" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:6px;min-height:12px;text-align:center;"></div>
       <div id="gps-result" style="display:none;margin-top:10px;">
-        <div id="field-sat-wrap" style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);background:#1c1a16;position:relative;">
-          <img id="field-sat-img" style="width:100%;display:block;" alt="Field satellite view">
+        <div id="field-sat-wrap" style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);background:#1c1a16;position:relative;aspect-ratio:1/1;touch-action:none;">
+          <img id="field-sat-img" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;transform-origin:0 0;will-change:transform;" alt="Field satellite view" draggable="false">
         </div>
         <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px;">
           <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);" id="sat-zoom-lbl">~500 m view</div>
@@ -1517,7 +1517,7 @@ function wxMult(key) {
 // ═══════════════════════════════════════════════════════
 // FIELD LOCATION + SATELLITE IMAGE (GPS)
 // ═══════════════════════════════════════════════════════
-var fieldLoc = { lat:null, lon:null, place:'', satDataUrl:null, satImgObj:null, panLat:0, panLon:0, zoomIdx:2 };
+var fieldLoc = { lat:null, lon:null, place:'', satDataUrl:null, satImgObj:null, baseImgObj:null, scale:4.8, tx:0, ty:0 };
 
 function captureFieldLocation(){
   var btn = document.getElementById('gps-btn');
@@ -1528,8 +1528,6 @@ function captureFieldLocation(){
   navigator.geolocation.getCurrentPosition(function(pos){
     var lat = pos.coords.latitude, lon = pos.coords.longitude;
     fieldLoc.lat = lat; fieldLoc.lon = lon;
-    fieldLoc.panLat = 0; fieldLoc.panLon = 0;
-    fieldLoc.halfDeg = 0.0022;
     status.textContent = 'Location found \u00b7 loading satellite + forecast\u2026';
     document.getElementById('field-coord-lbl').textContent =
       lat.toFixed(5)+'\u00b0'+(lat>=0?'N':'S')+' \u00b7 '+Math.abs(lon).toFixed(5)+'\u00b0'+(lon>=0?'E':'W');
@@ -1550,53 +1548,40 @@ function captureFieldLocation(){
   }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
 }
 
-function loadFieldSatellite(lat, lon, halfDeg){
-  // Esri World Imagery static export (free, no API key)
-  // halfDeg = half-width of view in degrees (continuous). Falls back to stored value.
-  if(halfDeg==null){ halfDeg = fieldLoc.halfDeg || 0.0022; }
-  // Clamp to sensible range (~120 m to ~4 km across)
-  halfDeg = Math.max(0.0005, Math.min(0.018, halfDeg));
-  fieldLoc.halfDeg = halfDeg;
-  var d = halfDeg;
-  // Human-readable view width label (meters across = 2*d degrees * ~111000 m/deg)
-  var mAcross = Math.round(2*d*111000);
-  var lbl=document.getElementById('sat-zoom-lbl');
-  if(lbl) lbl.textContent = (mAcross>=1000 ? (mAcross/1000).toFixed(1)+' km' : mAcross+' m') + ' view';
-  // Apply pan offset (viewed center = GPS point + pan)
-  var cLat = lat + (fieldLoc.panLat||0);
-  var cLon = lon + (fieldLoc.panLon||0);
-  fieldLoc.viewLat = cLat; fieldLoc.viewLon = cLon;
-  var bbox = (cLon-d)+','+(cLat-d)+','+(cLon+d)+','+(cLat+d);
+function loadFieldSatellite(lat, lon){
+  // Fetch ONE large wide-area image; pan/zoom happen via CSS transform (smooth, no re-fetch).
+  // Wide capture = ~2.4 km across so the user can zoom into any part smoothly.
+  var d = 0.011; // half-width in degrees (~2.4 km across)
+  fieldLoc.captureLat = lat; fieldLoc.captureLon = lon; fieldLoc.captureHalfDeg = d;
+  var bbox = (lon-d)+','+(lat-d)+','+(lon+d)+','+(lat+d);
   var url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export'
     + '?bbox=' + bbox
-    + '&bboxSR=4326&size=600,600&imageSR=3857&format=jpg&f=image';
+    + '&bboxSR=4326&size=1200,1200&imageSR=3857&format=jpg&f=image';
   var img = document.getElementById('field-sat-img');
   var res = document.getElementById('gps-result');
   var status = document.getElementById('gps-status');
   var btn = document.getElementById('gps-btn');
-  // Load into an Image to convert to data URL for report embedding
   var loader = new Image();
   loader.crossOrigin = 'anonymous';
   loader.onload = function(){
     res.style.display = 'block';
+    fieldLoc.baseImgObj = loader;
     img.src = url;
-    // Convert to data URL for canvas report
-    try {
-      var c = document.createElement('canvas');
-      c.width = loader.naturalWidth; c.height = loader.naturalHeight;
-      c.getContext('2d').drawImage(loader,0,0);
-      fieldLoc.satDataUrl = c.toDataURL('image/jpeg', 0.85);
-      var sImg = new Image();
-      sImg.onload = function(){ fieldLoc.satImgObj = sImg; };
-      sImg.src = fieldLoc.satDataUrl;
-    } catch(e){ fieldLoc.satDataUrl = null; }
+    // Reset transform to a sensible default zoom (show ~500 m of the 2.4 km image)
+    // scale so ~500m fills the frame: frame shows (1/scale) of image width.
+    // image covers 2400m, want to show 500m => scale = 2400/500 = 4.8
+    fieldLoc.scale = 4.8;
+    fieldLoc.tx = 0; fieldLoc.ty = 0;
+    centerSatView();
+    applySatTransform();
+    updateSatLabel();
     status.textContent = '';
     btn.disabled = false;
     btn.textContent = 'Update Field Location';
     wireSatPan();
+    renderSatToReport();
   };
   loader.onerror = function(){
-    // Still show the image directly even if data-url conversion fails
     res.style.display = 'block';
     img.src = url;
     status.textContent = 'Satellite image loaded (may not embed in report).';
@@ -1607,122 +1592,202 @@ function loadFieldSatellite(lat, lon, halfDeg){
   loader.src = url;
 }
 
-// ── SATELLITE PAN + PINCH ZOOM ────────────────────────────────────
-var _satPtrs = {};              // active pointers by id
-var _satPan = { dragging:false, startX:0, startY:0, accumX:0, accumY:0 };
-var _satPinch = { active:false, startDist:0, startHalfDeg:0 };
+// Center the view on the middle of the base image at current scale
+function centerSatView(){
+  var wrap = document.getElementById('field-sat-wrap');
+  if(!wrap) return;
+  var W = wrap.offsetWidth, H = wrap.offsetHeight || W;
+  var s = fieldLoc.scale || 1;
+  // image displayed at W*s wide; center it
+  fieldLoc.tx = (W - W*s)/2;
+  fieldLoc.ty = (H - H*s)/2;
+  clampSatView();
+}
 
-function _satPointDist(){
+function clampSatView(){
+  var wrap = document.getElementById('field-sat-wrap');
+  if(!wrap) return;
+  var W = wrap.offsetWidth, H = wrap.offsetHeight || W;
+  var s = fieldLoc.scale || 1;
+  var minTx = W - W*s, minTy = H - H*s;
+  if(fieldLoc.tx > 0) fieldLoc.tx = 0;
+  if(fieldLoc.ty > 0) fieldLoc.ty = 0;
+  if(fieldLoc.tx < minTx) fieldLoc.tx = minTx;
+  if(fieldLoc.ty < minTy) fieldLoc.ty = minTy;
+}
+
+function applySatTransform(){
+  var img = document.getElementById('field-sat-img');
+  if(!img) return;
+  img.style.transform = 'translate('+fieldLoc.tx+'px,'+fieldLoc.ty+'px) scale('+(fieldLoc.scale||1)+')';
+}
+
+function updateSatLabel(){
+  var lbl = document.getElementById('sat-zoom-lbl');
+  if(!lbl) return;
+  // visible width in meters = totalMeters / scale
+  var totalM = 2 * (fieldLoc.captureHalfDeg||0.011) * 111000;
+  var visM = Math.round(totalM / (fieldLoc.scale||1));
+  lbl.textContent = (visM>=1000 ? (visM/1000).toFixed(1)+' km' : visM+' m') + ' view';
+}
+
+// Render the current framed view into a data URL for the report
+function renderSatToReport(){
+  try {
+    var wrap = document.getElementById('field-sat-wrap');
+    var base = fieldLoc.baseImgObj;
+    if(!wrap || !base) return;
+    var W = wrap.offsetWidth, H = wrap.offsetHeight || W;
+    var s = fieldLoc.scale || 1;
+    // The visible frame maps to a sub-rectangle of the base image.
+    // base image is drawn at size (W*s) starting at (tx,ty).
+    // source rect in base-image pixels:
+    var bw = base.naturalWidth, bh = base.naturalHeight;
+    var dispW = W*s, dispH = H*s;
+    var sx = (-fieldLoc.tx / dispW) * bw;
+    var sy = (-fieldLoc.ty / dispH) * bh;
+    var sw = (W / dispW) * bw;
+    var sh = (H / dispH) * bh;
+    var out = document.createElement('canvas');
+    out.width = 700; out.height = 700;
+    var octx = out.getContext('2d');
+    octx.drawImage(base, sx, sy, sw, sh, 0, 0, 700, 700);
+    fieldLoc.satDataUrl = out.toDataURL('image/jpeg', 0.85);
+    var sImg = new Image();
+    sImg.onload = function(){ fieldLoc.satImgObj = sImg; };
+    sImg.src = fieldLoc.satDataUrl;
+  } catch(e){ /* tainted canvas - report will skip image */ }
+}
+
+// ── SATELLITE PAN + PINCH (smooth, transform-based) ───────────────
+var _satPtrs = {};
+var _satGesture = { panning:false, pinching:false, lastX:0, lastY:0, startDist:0, startScale:1, cx:0, cy:0 };
+
+function _satTwoPointInfo(){
   var ids = Object.keys(_satPtrs);
-  if(ids.length < 2) return 0;
   var a = _satPtrs[ids[0]], b = _satPtrs[ids[1]];
-  return Math.hypot(a.x-b.x, a.y-b.y);
+  return {
+    dist: Math.hypot(a.x-b.x, a.y-b.y),
+    cx: (a.x+b.x)/2, cy: (a.y+b.y)/2
+  };
 }
 
 function satPanStart(e){
   if(fieldLoc.lat==null) return;
   _satPtrs[e.pointerId] = { x:e.clientX, y:e.clientY };
   var n = Object.keys(_satPtrs).length;
+  var img=document.getElementById('field-sat-img');
+  if(img) img.style.transition='none';
   if(n === 1){
-    _satPan.dragging = true;
-    _satPan.startX = e.clientX; _satPan.startY = e.clientY;
-    _satPan.accumX = 0; _satPan.accumY = 0;
-    var img=document.getElementById('field-sat-img'); if(img) img.style.cursor='grabbing';
+    _satGesture.panning = true; _satGesture.pinching = false;
+    _satGesture.lastX = e.clientX; _satGesture.lastY = e.clientY;
+    if(img) img.style.cursor='grabbing';
   } else if(n === 2){
-    // Entering pinch: cancel any pan-in-progress
-    _satPan.dragging = false;
-    _satPinch.active = true;
-    _satPinch.startDist = _satPointDist();
-    _satPinch.startHalfDeg = fieldLoc.halfDeg || 0.0022;
-    var img2=document.getElementById('field-sat-img'); if(img2) img2.style.transform='';
+    _satGesture.panning = false; _satGesture.pinching = true;
+    var info = _satTwoPointInfo();
+    _satGesture.startDist = info.dist;
+    _satGesture.startScale = fieldLoc.scale || 1;
+    var wrap=document.getElementById('field-sat-wrap');
+    var rect = wrap.getBoundingClientRect();
+    _satGesture.cx = info.cx - rect.left;
+    _satGesture.cy = info.cy - rect.top;
   }
 }
 
 function satPanMove(e){
-  if(!(e.pointerId in _satPtrs)) { if(!_satPan.dragging && !_satPinch.active) return; }
-  if(e.pointerId in _satPtrs){ _satPtrs[e.pointerId] = { x:e.clientX, y:e.clientY }; }
+  if(!(e.pointerId in _satPtrs)) return;
+  _satPtrs[e.pointerId] = { x:e.clientX, y:e.clientY };
   if(e.cancelable) e.preventDefault();
 
-  if(_satPinch.active){
-    var dist = _satPointDist();
-    if(dist>0 && _satPinch.startDist>0){
-      // Pinch out (dist grows) => zoom IN => smaller halfDeg
-      var ratio = _satPinch.startDist / dist;
-      var img=document.getElementById('field-sat-img');
-      // live visual scale feedback (inverse of ratio)
-      if(img) img.style.transform = 'scale('+(1/ratio)+')';
+  if(_satGesture.pinching && Object.keys(_satPtrs).length >= 2){
+    var info = _satTwoPointInfo();
+    if(_satGesture.startDist > 0){
+      var newScale = _satGesture.startScale * (info.dist / _satGesture.startDist);
+      newScale = Math.max(1, Math.min(20, newScale)); // 1x (full 2.4km) to 20x (~120m)
+      // Zoom around the pinch midpoint: keep that point stationary
+      var cx = _satGesture.cx, cy = _satGesture.cy;
+      var s0 = fieldLoc.scale || 1;
+      var ratio = newScale / s0;
+      fieldLoc.tx = cx - (cx - fieldLoc.tx) * ratio;
+      fieldLoc.ty = cy - (cy - fieldLoc.ty) * ratio;
+      fieldLoc.scale = newScale;
+      clampSatView();
+      applySatTransform();
+      updateSatLabel();
     }
     return;
   }
 
-  if(_satPan.dragging){
-    var dx = e.clientX - _satPan.startX;
-    var dy = e.clientY - _satPan.startY;
-    _satPan.accumX = dx; _satPan.accumY = dy;
-    var im=document.getElementById('field-sat-img');
-    if(im) im.style.transform = 'translate('+dx+'px,'+dy+'px)';
+  if(_satGesture.panning){
+    var dx = e.clientX - _satGesture.lastX;
+    var dy = e.clientY - _satGesture.lastY;
+    _satGesture.lastX = e.clientX; _satGesture.lastY = e.clientY;
+    fieldLoc.tx += dx; fieldLoc.ty += dy;
+    clampSatView();
+    applySatTransform();
   }
 }
 
 function satPanEnd(e){
   if(e && (e.pointerId in _satPtrs)) delete _satPtrs[e.pointerId];
-  var img=document.getElementById('field-sat-img');
   var remaining = Object.keys(_satPtrs).length;
-
-  if(_satPinch.active){
-    // Commit pinch zoom when a finger lifts
-    if(remaining < 2){
-      var dist = _satPinch.startDist; // last known will be applied below
-      // Use the current transform scale to derive final halfDeg
-      var scale = 1;
-      if(img && img.style.transform.indexOf('scale')>=0){
-        scale = parseFloat(img.style.transform.replace(/.*scale\(([^)]+)\).*/, '$1')) || 1;
-      }
-      if(img) img.style.transform='';
-      var newHalf = (fieldLoc.halfDeg||0.0022) / scale;
-      _satPinch.active = false;
-      _satPtrs = {};
-      loadFieldSatellite(fieldLoc.lat, fieldLoc.lon, newHalf);
+  var img=document.getElementById('field-sat-img');
+  if(remaining === 0){
+    if(_satGesture.panning || _satGesture.pinching){
+      _satGesture.panning = false; _satGesture.pinching = false;
+      if(img) img.style.cursor='grab';
+      renderSatToReport(); // capture final framing for the report
     }
-    return;
-  }
-
-  if(_satPan.dragging && remaining === 0){
-    _satPan.dragging = false;
-    if(img) img.style.cursor='grab';
-    var wrap=document.getElementById('field-sat-wrap');
-    var w = wrap ? wrap.offsetWidth : 300;
-    var d = fieldLoc.halfDeg || 0.0022;
-    var degPerPx = (2*d) / w;
-    fieldLoc.panLon = (fieldLoc.panLon||0) - _satPan.accumX * degPerPx;
-    fieldLoc.panLat = (fieldLoc.panLat||0) + _satPan.accumY * degPerPx;
-    if(img) img.style.transform = '';
-    loadFieldSatellite(fieldLoc.lat, fieldLoc.lon, fieldLoc.halfDeg);
+  } else if(remaining === 1){
+    // Transition from pinch back to pan with the remaining finger
+    _satGesture.pinching = false;
+    _satGesture.panning = true;
+    var id = Object.keys(_satPtrs)[0];
+    _satGesture.lastX = _satPtrs[id].x; _satGesture.lastY = _satPtrs[id].y;
   }
 }
 
 function recenterSat(){
-  if(fieldLoc.lat==null) return;
-  fieldLoc.panLat = 0; fieldLoc.panLon = 0;
-  loadFieldSatellite(fieldLoc.lat, fieldLoc.lon, fieldLoc.halfDeg);
+  if(fieldLoc.lat==null || !fieldLoc.baseImgObj) return;
+  fieldLoc.scale = 4.8;
+  centerSatView();
+  applySatTransform();
+  updateSatLabel();
+  renderSatToReport();
 }
 
 function wireSatPan(){
   var img = document.getElementById('field-sat-img');
-  if(!img || img._panWired) return;
-  img._panWired = true;
+  var wrap = document.getElementById('field-sat-wrap');
+  if(!img || !wrap || wrap._panWired) return;
+  wrap._panWired = true;
   img.style.cursor = 'grab';
-  img.style.touchAction = 'none';
-  img.style.userSelect = 'none';
   img.draggable = false;
   img.ondragstart = function(){ return false; };
-  img.addEventListener('pointerdown', function(e){
-    img.setPointerCapture && img.setPointerCapture(e.pointerId);
+  wrap.style.touchAction = 'none';
+  wrap.addEventListener('pointerdown', function(e){
+    wrap.setPointerCapture && wrap.setPointerCapture(e.pointerId);
     satPanStart(e);
   });
-  img.addEventListener('pointermove', satPanMove);
-  img.addEventListener('pointerup', satPanEnd);
-  img.addEventListener('pointercancel', satPanEnd);
+  wrap.addEventListener('pointermove', satPanMove);
+  wrap.addEventListener('pointerup', satPanEnd);
+  wrap.addEventListener('pointercancel', satPanEnd);
+  // Desktop wheel zoom for convenience
+  wrap.addEventListener('wheel', function(e){
+    if(fieldLoc.lat==null) return;
+    e.preventDefault();
+    var rect = wrap.getBoundingClientRect();
+    var cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+    var s0 = fieldLoc.scale || 1;
+    var newScale = Math.max(1, Math.min(20, s0 * (e.deltaY < 0 ? 1.12 : 0.89)));
+    var ratio = newScale / s0;
+    fieldLoc.tx = cx - (cx - fieldLoc.tx) * ratio;
+    fieldLoc.ty = cy - (cy - fieldLoc.ty) * ratio;
+    fieldLoc.scale = newScale;
+    clampSatView(); applySatTransform(); updateSatLabel();
+    clearTimeout(fieldLoc._wheelTimer);
+    fieldLoc._wheelTimer = setTimeout(renderSatToReport, 200);
+  }, {passive:false});
 }
 
 function reverseGeocodeField(lat, lon){
