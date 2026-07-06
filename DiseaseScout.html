@@ -259,8 +259,18 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
       <div class="row2">
         <div class="fg"><label>Scout Date</label><input type="text" id="s-date" placeholder="MM/DD/YYYY"></div>
         <div class="fg"><label>Grower Name</label><input type="text" id="s-grower" placeholder="Farm Name"></div>
-        <div class="fg"><label>Field Name</label><input type="text" id="s-field" placeholder="Field"></div>
-        <div class="fg"><label>Location</label><input type="text" id="s-loc" placeholder="County, State"></div>
+      </div>
+      <div class="fg" style="margin-top:10px;">
+        <label>Field Location</label>
+        <button id="gps-btn" class="dlbtn gold" style="width:100%;justify-content:center;" onclick="captureFieldLocation()">\ud83d\udccd Get Field Location &amp; Satellite Image</button>
+      </div>
+      <div id="gps-status" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:6px;min-height:12px;text-align:center;"></div>
+      <div id="gps-result" style="display:none;margin-top:10px;">
+        <div id="field-sat-wrap" style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);background:#1c1a16;">
+          <img id="field-sat-img" style="width:100%;display:block;" alt="Field satellite view">
+        </div>
+        <div id="field-loc-lbl" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dark);text-align:center;margin-top:6px;font-weight:600;"></div>
+        <div id="field-coord-lbl" style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);text-align:center;margin-top:2px;"></div>
       </div>
     </div>
 
@@ -1422,6 +1432,10 @@ async function fetchWeatherGPS() {
               if (county) locEl.value = county + (state ? ', ' + state : '');
               else if (city) locEl.value = placeName;
             }
+            // Also set field location if not already captured via GPS
+            if (fieldLoc.lat == null) {
+              fieldLoc.place = county ? (county + (state ? ', ' + state : '')) : placeName;
+            }
           }
         } catch(_) { /* keep coordinate fallback */ }
         await loadForecast(lat, lon, placeName, null);
@@ -1499,6 +1513,95 @@ function renderWxResults() {
 function wxMult(key) {
   const base = wxData ? hoursToRisk(wxData.favHours[key]).mult : 1.0;
   return isIrrigated ? Math.min(base + IRRIG_MOD, 1.9) : base;
+}
+
+// ═══════════════════════════════════════════════════════
+// FIELD LOCATION + SATELLITE IMAGE (GPS)
+// ═══════════════════════════════════════════════════════
+var fieldLoc = { lat:null, lon:null, place:'', satDataUrl:null };
+
+function captureFieldLocation(){
+  var btn = document.getElementById('gps-btn');
+  var status = document.getElementById('gps-status');
+  if(!navigator.geolocation){ status.textContent = 'Geolocation not supported on this device.'; return; }
+  btn.disabled = true;
+  status.textContent = 'Acquiring GPS location\u2026';
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var lat = pos.coords.latitude, lon = pos.coords.longitude;
+    fieldLoc.lat = lat; fieldLoc.lon = lon;
+    status.textContent = 'Location found \u00b7 loading satellite image\u2026';
+    document.getElementById('field-coord-lbl').textContent =
+      lat.toFixed(5)+'\u00b0'+(lat>=0?'N':'S')+' \u00b7 '+Math.abs(lon).toFixed(5)+'\u00b0'+(lon>=0?'E':'W');
+    loadFieldSatellite(lat, lon);
+    reverseGeocodeField(lat, lon);
+  }, function(err){
+    btn.disabled = false;
+    var msg = 'Could not get location.';
+    if(err.code === 1) msg = 'Location permission denied. Enable location access and retry.';
+    else if(err.code === 2) msg = 'Location unavailable. Try again outdoors.';
+    else if(err.code === 3) msg = 'Location request timed out. Retry.';
+    status.textContent = msg;
+  }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
+}
+
+function loadFieldSatellite(lat, lon){
+  // Esri World Imagery static export (free, no API key)
+  // Build a small bounding box around the point (~350m field view)
+  var d = 0.0022; // ~250m in degrees latitude
+  var bbox = (lon-d)+','+(lat-d)+','+(lon+d)+','+(lat+d);
+  var url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export'
+    + '?bbox=' + bbox
+    + '&bboxSR=4326&size=600,600&imageSR=3857&format=jpg&f=image';
+  var img = document.getElementById('field-sat-img');
+  var res = document.getElementById('gps-result');
+  var status = document.getElementById('gps-status');
+  var btn = document.getElementById('gps-btn');
+  // Load into an Image to convert to data URL for report embedding
+  var loader = new Image();
+  loader.crossOrigin = 'anonymous';
+  loader.onload = function(){
+    res.style.display = 'block';
+    img.src = url;
+    // Convert to data URL for canvas report
+    try {
+      var c = document.createElement('canvas');
+      c.width = loader.naturalWidth; c.height = loader.naturalHeight;
+      c.getContext('2d').drawImage(loader,0,0);
+      fieldLoc.satDataUrl = c.toDataURL('image/jpeg', 0.85);
+      var sImg = new Image();
+      sImg.onload = function(){ fieldLoc.satImgObj = sImg; };
+      sImg.src = fieldLoc.satDataUrl;
+    } catch(e){ fieldLoc.satDataUrl = null; }
+    status.textContent = '';
+    btn.disabled = false;
+    btn.textContent = '\ud83d\udccd Update Field Location';
+  };
+  loader.onerror = function(){
+    // Still show the image directly even if data-url conversion fails
+    res.style.display = 'block';
+    img.src = url;
+    status.textContent = 'Satellite image loaded (may not embed in report).';
+    btn.disabled = false;
+    btn.textContent = '\ud83d\udccd Update Field Location';
+  };
+  loader.src = url;
+}
+
+function reverseGeocodeField(lat, lon){
+  fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lon+'&zoom=12')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var a = data.address || {};
+      var county = a.county || a.city || a.town || a.village || '';
+      var state = a.state || '';
+      var place = [county, state].filter(Boolean).join(', ');
+      fieldLoc.place = place || 'Location captured';
+      document.getElementById('field-loc-lbl').textContent = fieldLoc.place;
+    })
+    .catch(function(){
+      fieldLoc.place = 'GPS location';
+      document.getElementById('field-loc-lbl').textContent = 'GPS location captured';
+    });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1701,8 +1804,8 @@ function generateReport(){
     try{
       renderCanvas();
       var cv = document.getElementById('rpt-canvas');
-      var fname = 'disease-scout-' + ((document.getElementById('s-field') && document.getElementById('s-field').value) ?
-        document.getElementById('s-field').value.replace(/\s+/g,'-').toLowerCase() : 'report') + '.jpg';
+      var fname = 'disease-scout-' + ((document.getElementById('s-grower') && document.getElementById('s-grower').value) ?
+        document.getElementById('s-grower').value.replace(/\s+/g,'-').toLowerCase() : 'report') + '.jpg';
       cv.toBlob(function(blob){
         if(!blob){ toast('Error: could not render report'); return; }
         if(navigator.share && navigator.canShare){
@@ -1772,10 +1875,11 @@ function renderCanvas(){
 
   var date  =((document.getElementById('s-date'  )||{}).value||'').trim();
   var grower=((document.getElementById('s-grower')||{}).value||'').trim();
-  var field =((document.getElementById('s-field' )||{}).value||'').trim();
-  var loc   =((document.getElementById('s-loc'   )||{}).value||'').trim();
   var notes =((document.getElementById('s-notes' )||{}).value||'').trim();
-  var fl=[field,loc].filter(Boolean).join(' \u00b7 ');
+  var coordStr = (fieldLoc.lat!=null)
+    ? fieldLoc.lat.toFixed(4)+'\u00b0'+(fieldLoc.lat>=0?'N':'S')+' '+Math.abs(fieldLoc.lon).toFixed(4)+'\u00b0'+(fieldLoc.lon>=0?'E':'W')
+    : '';
+  var fl=[fieldLoc.place, coordStr].filter(Boolean).join(' \u00b7 ');
 
   // ── HEADER ───────────────────────────────────────────────────────────────
   ctx.fillStyle=RC.muted; ctx.font='10px "DM Mono",monospace';
@@ -1798,6 +1902,37 @@ function renderCanvas(){
 
   // ── AGRONOMIST BAR ───────────────────────────────────────────────────────
   drawDisAgroBar(ctx,PAD,y,cw); y+=72;
+
+  // ── FIELD SATELLITE IMAGE ────────────────────────────────────────────────
+  if(fieldLoc.satImgObj){
+    var satW=cw, satH=Math.round(cw*0.42);
+    var sx=PAD, sy=y;
+    ctx.save();
+    rptRoundRect(ctx,sx,sy,satW,satH,8,'#1c1a16',RC.gold,1.5);
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(sx,sy,satW,satH,8); else ctx.rect(sx,sy,satW,satH);
+    ctx.clip();
+    // cover-fit the square satellite image into the wide banner
+    var img=fieldLoc.satImgObj;
+    var scale=Math.max(satW/img.width, satH/img.height);
+    var dw=img.width*scale, dh=img.height*scale;
+    ctx.drawImage(img, sx+(satW-dw)/2, sy+(satH-dh)/2, dw, dh);
+    ctx.restore();
+    // location caption overlay
+    ctx.fillStyle='rgba(28,26,22,0.78)';
+    ctx.fillRect(sx,sy+satH-22,satW,22);
+    ctx.fillStyle='#e8dcc0'; ctx.font='10px "DM Mono",monospace'; ctx.textAlign='left';
+    ctx.fillText('\ud83d\udccd '+(fieldLoc.place||'Field location'),sx+10,sy+satH-8);
+    if(fieldLoc.lat!=null){
+      ctx.textAlign='right';
+      ctx.fillText(fieldLoc.lat.toFixed(4)+', '+fieldLoc.lon.toFixed(4),sx+satW-10,sy+satH-8);
+      ctx.textAlign='left';
+    }
+    // "Esri World Imagery" attribution
+    ctx.fillStyle=RC.muted; ctx.font='7px "DM Mono",monospace'; ctx.textAlign='right';
+    ctx.fillText('Source: Esri World Imagery',W-PAD,sy+satH+11); ctx.textAlign='left';
+    y+=satH+18;
+  }
 
   // ── FIELD INFO BAR ───────────────────────────────────────────────────────
   var dtmVal=(selHybrid&&curStage)?getDaysToMaturity(selHybrid,curStage)+' days':'--';
@@ -1996,7 +2131,7 @@ function resetAll(){
   document.getElementById('yield-input').value='';
   document.getElementById('hist-content').innerHTML='<div class="tip" style="text-align:center;">Select a state above to view historical data.</div>';
   document.querySelectorAll('.sbtn,.pill').forEach(b=>b.classList.remove('on'));
-  ['s-grower','s-field','s-loc','s-notes'].forEach(id=>{document.getElementById(id).value='';});
+  ['s-grower','s-notes'].forEach(id=>{var _e=document.getElementById(id);if(_e)_e.value='';});
   DIS_KEYS.forEach(k=>obs[k]={present:false,sev:'None',layer:'Lower',prog:DIS_DEFAULT_PROG[k]||'stable'});
   isIrrigated=false;
   var irrTog=document.getElementById('irrigation-tog');
