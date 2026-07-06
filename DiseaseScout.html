@@ -270,14 +270,14 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
           <img id="field-sat-img" style="display:block;width:200%;max-width:none;height:auto;" alt="Field satellite view" draggable="false">
           <div style="position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:6px;z-index:5;">
             <button onclick="zoomSat(1)" style="width:34px;height:34px;border-radius:8px;border:1.5px solid var(--gold);background:rgba(28,26,22,0.82);color:var(--gold-l);font-size:20px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>
-            <button onclick="zoomSat(-1)" style="width:34px;height:34px;border-radius:8px;border:1.5px solid var(--gold);background:rgba(28,26,22,0.82);color:var(--gold-l);font-size:22px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">\u2212</button>
+            <button onclick="zoomSat(-1)" style="width:34px;height:34px;border-radius:8px;border:1.5px solid var(--gold);background:rgba(28,26,22,0.82);color:var(--gold-l);font-size:22px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>
           </div>
         </div>
         <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px;">
           <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);" id="sat-zoom-lbl">~500 m view</div>
           <button onclick="recenterSat()" style="font-family:'DM Mono',monospace;font-size:7px;letter-spacing:0.5px;color:var(--gold-d);background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;cursor:pointer;">RECENTER</button>
         </div>
-        <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);text-align:center;margin-top:3px;opacity:0.7;">Scroll to reposition \u00b7 +/\u2212 to zoom</div>
+        <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);text-align:center;margin-top:3px;opacity:0.7;">Scroll to reposition · +/− to zoom</div>
         <div id="field-loc-lbl" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dark);text-align:center;margin-top:6px;font-weight:600;"></div>
         <div id="field-coord-lbl" style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);text-align:center;margin-top:2px;"></div>
       </div>
