@@ -269,16 +269,11 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
         <div id="field-sat-wrap" style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);background:#1c1a16;position:relative;">
           <img id="field-sat-img" style="width:100%;display:block;" alt="Field satellite view">
         </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-          <span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);white-space:nowrap;">TIGHT</span>
-          <input type="range" id="sat-zoom" min="0" max="6" step="1" value="2" style="flex:1;accent-color:var(--gold);" oninput="adjustSatZoom(this.value)">
-          <span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);white-space:nowrap;">WIDE</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:2px;">
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px;">
           <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);" id="sat-zoom-lbl">~500 m view</div>
           <button onclick="recenterSat()" style="font-family:'DM Mono',monospace;font-size:7px;letter-spacing:0.5px;color:var(--gold-d);background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;cursor:pointer;">RECENTER</button>
         </div>
-        <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);text-align:center;margin-top:3px;opacity:0.7;">Drag image to reposition \u00b7 slider to zoom</div>
+        <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);text-align:center;margin-top:3px;opacity:0.7;">Drag to reposition \u00b7 pinch to zoom</div>
         <div id="field-loc-lbl" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dark);text-align:center;margin-top:6px;font-weight:600;"></div>
         <div id="field-coord-lbl" style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);text-align:center;margin-top:2px;"></div>
       </div>
@@ -1534,6 +1529,7 @@ function captureFieldLocation(){
     var lat = pos.coords.latitude, lon = pos.coords.longitude;
     fieldLoc.lat = lat; fieldLoc.lon = lon;
     fieldLoc.panLat = 0; fieldLoc.panLon = 0;
+    fieldLoc.halfDeg = 0.0022;
     status.textContent = 'Location found \u00b7 loading satellite + forecast\u2026';
     document.getElementById('field-coord-lbl').textContent =
       lat.toFixed(5)+'\u00b0'+(lat>=0?'N':'S')+' \u00b7 '+Math.abs(lon).toFixed(5)+'\u00b0'+(lon>=0?'E':'W');
@@ -1554,20 +1550,22 @@ function captureFieldLocation(){
   }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
 }
 
-// Zoom levels: index -> half-width in degrees (~ view size). Higher = wider.
-var SAT_ZOOM_STEPS = [0.0011, 0.0016, 0.0022, 0.0033, 0.0050, 0.0075, 0.0110];
-var SAT_ZOOM_LABELS = ['~250 m', '~350 m', '~500 m', '~750 m', '~1.1 km', '~1.7 km', '~2.5 km'];
-
-function loadFieldSatellite(lat, lon, zoomIdx){
+function loadFieldSatellite(lat, lon, halfDeg){
   // Esri World Imagery static export (free, no API key)
-  if(zoomIdx==null){ var ze=document.getElementById('sat-zoom'); zoomIdx = ze?parseInt(ze.value):2; }
-  fieldLoc.zoomIdx = zoomIdx;
-  var d = SAT_ZOOM_STEPS[zoomIdx] || 0.0022;
-  var lbl=document.getElementById('sat-zoom-lbl'); if(lbl) lbl.textContent=(SAT_ZOOM_LABELS[zoomIdx]||'')+' view';
+  // halfDeg = half-width of view in degrees (continuous). Falls back to stored value.
+  if(halfDeg==null){ halfDeg = fieldLoc.halfDeg || 0.0022; }
+  // Clamp to sensible range (~120 m to ~4 km across)
+  halfDeg = Math.max(0.0005, Math.min(0.018, halfDeg));
+  fieldLoc.halfDeg = halfDeg;
+  var d = halfDeg;
+  // Human-readable view width label (meters across = 2*d degrees * ~111000 m/deg)
+  var mAcross = Math.round(2*d*111000);
+  var lbl=document.getElementById('sat-zoom-lbl');
+  if(lbl) lbl.textContent = (mAcross>=1000 ? (mAcross/1000).toFixed(1)+' km' : mAcross+' m') + ' view';
   // Apply pan offset (viewed center = GPS point + pan)
   var cLat = lat + (fieldLoc.panLat||0);
   var cLon = lon + (fieldLoc.panLon||0);
-  fieldLoc.viewLat = cLat; fieldLoc.viewLon = cLon; fieldLoc.viewD = d;
+  fieldLoc.viewLat = cLat; fieldLoc.viewLon = cLon;
   var bbox = (cLon-d)+','+(cLat-d)+','+(cLon+d)+','+(cLat+d);
   var url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export'
     + '?bbox=' + bbox
@@ -1609,53 +1607,104 @@ function loadFieldSatellite(lat, lon, zoomIdx){
   loader.src = url;
 }
 
-function adjustSatZoom(idx){
-  if(fieldLoc.lat==null) return;
-  loadFieldSatellite(fieldLoc.lat, fieldLoc.lon, parseInt(idx));
-}
+// ── SATELLITE PAN + PINCH ZOOM ────────────────────────────────────
+var _satPtrs = {};              // active pointers by id
+var _satPan = { dragging:false, startX:0, startY:0, accumX:0, accumY:0 };
+var _satPinch = { active:false, startDist:0, startHalfDeg:0 };
 
-// ── SATELLITE PAN (drag to recenter) ──────────────────────────────
-var _satPan = { dragging:false, startX:0, startY:0, accumX:0, accumY:0, timer:null };
+function _satPointDist(){
+  var ids = Object.keys(_satPtrs);
+  if(ids.length < 2) return 0;
+  var a = _satPtrs[ids[0]], b = _satPtrs[ids[1]];
+  return Math.hypot(a.x-b.x, a.y-b.y);
+}
 
 function satPanStart(e){
   if(fieldLoc.lat==null) return;
-  _satPan.dragging = true;
-  _satPan.startX = e.clientX; _satPan.startY = e.clientY;
-  _satPan.accumX = 0; _satPan.accumY = 0;
-  var img=document.getElementById('field-sat-img'); if(img) img.style.cursor='grabbing';
+  _satPtrs[e.pointerId] = { x:e.clientX, y:e.clientY };
+  var n = Object.keys(_satPtrs).length;
+  if(n === 1){
+    _satPan.dragging = true;
+    _satPan.startX = e.clientX; _satPan.startY = e.clientY;
+    _satPan.accumX = 0; _satPan.accumY = 0;
+    var img=document.getElementById('field-sat-img'); if(img) img.style.cursor='grabbing';
+  } else if(n === 2){
+    // Entering pinch: cancel any pan-in-progress
+    _satPan.dragging = false;
+    _satPinch.active = true;
+    _satPinch.startDist = _satPointDist();
+    _satPinch.startHalfDeg = fieldLoc.halfDeg || 0.0022;
+    var img2=document.getElementById('field-sat-img'); if(img2) img2.style.transform='';
+  }
 }
 
 function satPanMove(e){
-  if(!_satPan.dragging) return;
+  if(!(e.pointerId in _satPtrs)) { if(!_satPan.dragging && !_satPinch.active) return; }
+  if(e.pointerId in _satPtrs){ _satPtrs[e.pointerId] = { x:e.clientX, y:e.clientY }; }
   if(e.cancelable) e.preventDefault();
-  var dx = e.clientX - _satPan.startX;
-  var dy = e.clientY - _satPan.startY;
-  _satPan.accumX = dx; _satPan.accumY = dy;
-  var img=document.getElementById('field-sat-img');
-  if(img) img.style.transform = 'translate('+dx+'px,'+dy+'px)';
+
+  if(_satPinch.active){
+    var dist = _satPointDist();
+    if(dist>0 && _satPinch.startDist>0){
+      // Pinch out (dist grows) => zoom IN => smaller halfDeg
+      var ratio = _satPinch.startDist / dist;
+      var img=document.getElementById('field-sat-img');
+      // live visual scale feedback (inverse of ratio)
+      if(img) img.style.transform = 'scale('+(1/ratio)+')';
+    }
+    return;
+  }
+
+  if(_satPan.dragging){
+    var dx = e.clientX - _satPan.startX;
+    var dy = e.clientY - _satPan.startY;
+    _satPan.accumX = dx; _satPan.accumY = dy;
+    var im=document.getElementById('field-sat-img');
+    if(im) im.style.transform = 'translate('+dx+'px,'+dy+'px)';
+  }
 }
 
-function satPanEnd(){
-  if(!_satPan.dragging) return;
-  _satPan.dragging = false;
+function satPanEnd(e){
+  if(e && (e.pointerId in _satPtrs)) delete _satPtrs[e.pointerId];
   var img=document.getElementById('field-sat-img');
-  if(img){ img.style.cursor='grab'; }
-  var wrap=document.getElementById('field-sat-wrap');
-  var w = wrap ? wrap.offsetWidth : 300;
-  // Convert pixel drag to degree offset. Image spans 2*d degrees across w px.
-  // Drag right (positive dx) should move view left (west) => subtract from lon.
-  var d = fieldLoc.viewD || 0.0022;
-  var degPerPx = (2*d) / w;
-  fieldLoc.panLon = (fieldLoc.panLon||0) - _satPan.accumX * degPerPx;
-  fieldLoc.panLat = (fieldLoc.panLat||0) + _satPan.accumY * degPerPx; // drag down => move view north
-  if(img) img.style.transform = '';
-  loadFieldSatellite(fieldLoc.lat, fieldLoc.lon, fieldLoc.zoomIdx);
+  var remaining = Object.keys(_satPtrs).length;
+
+  if(_satPinch.active){
+    // Commit pinch zoom when a finger lifts
+    if(remaining < 2){
+      var dist = _satPinch.startDist; // last known will be applied below
+      // Use the current transform scale to derive final halfDeg
+      var scale = 1;
+      if(img && img.style.transform.indexOf('scale')>=0){
+        scale = parseFloat(img.style.transform.replace(/.*scale\(([^)]+)\).*/, '$1')) || 1;
+      }
+      if(img) img.style.transform='';
+      var newHalf = (fieldLoc.halfDeg||0.0022) / scale;
+      _satPinch.active = false;
+      _satPtrs = {};
+      loadFieldSatellite(fieldLoc.lat, fieldLoc.lon, newHalf);
+    }
+    return;
+  }
+
+  if(_satPan.dragging && remaining === 0){
+    _satPan.dragging = false;
+    if(img) img.style.cursor='grab';
+    var wrap=document.getElementById('field-sat-wrap');
+    var w = wrap ? wrap.offsetWidth : 300;
+    var d = fieldLoc.halfDeg || 0.0022;
+    var degPerPx = (2*d) / w;
+    fieldLoc.panLon = (fieldLoc.panLon||0) - _satPan.accumX * degPerPx;
+    fieldLoc.panLat = (fieldLoc.panLat||0) + _satPan.accumY * degPerPx;
+    if(img) img.style.transform = '';
+    loadFieldSatellite(fieldLoc.lat, fieldLoc.lon, fieldLoc.halfDeg);
+  }
 }
 
 function recenterSat(){
   if(fieldLoc.lat==null) return;
   fieldLoc.panLat = 0; fieldLoc.panLon = 0;
-  loadFieldSatellite(fieldLoc.lat, fieldLoc.lon, fieldLoc.zoomIdx);
+  loadFieldSatellite(fieldLoc.lat, fieldLoc.lon, fieldLoc.halfDeg);
 }
 
 function wireSatPan(){
@@ -1667,7 +1716,6 @@ function wireSatPan(){
   img.style.userSelect = 'none';
   img.draggable = false;
   img.ondragstart = function(){ return false; };
-  // Pointer events (unified mouse + touch)
   img.addEventListener('pointerdown', function(e){
     img.setPointerCapture && img.setPointerCapture(e.pointerId);
     satPanStart(e);
