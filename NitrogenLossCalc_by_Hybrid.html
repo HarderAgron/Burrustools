@@ -180,7 +180,6 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
   <div class="ctitle">Soil Properties</div>
   <div class="fg">
     <label>Soil Texture</label>
-    <button class="seg-btn" id="soil-gps-btn" onclick="detectSoilSmart()" style="width:100%;background:var(--gold,#c88c3c);color:#1a1208;border-color:var(--gold,#c88c3c);margin-bottom:6px;padding:11px;">📍 Detect Soil Type from GPS</button>
     <div class="hint" id="soil-gps-status" style="margin-bottom:8px;min-height:12px;"></div>
     <div class="seg grid2" id="seg-soilTexture">
       <button class="seg-btn"    data-val="sand">Sand / Loamy Sand</button>
@@ -706,7 +705,7 @@ function captureFieldLocation(){
   navigator.geolocation.getCurrentPosition(function(pos){
     var lat = pos.coords.latitude, lon = pos.coords.longitude;
     fieldLoc.lat = lat; fieldLoc.lon = lon;
-    status.textContent = 'Location found \u00b7 loading satellite + forecast\u2026';
+    status.textContent = 'Location found \u00b7 loading satellite + soil\u2026';
     document.getElementById('field-coord-lbl').textContent =
       lat.toFixed(5)+'\u00b0'+(lat>=0?'N':'S')+' \u00b7 '+Math.abs(lon).toFixed(5)+'\u00b0'+(lon>=0?'E':'W');
     loadFieldSatellite(lat, lon);
@@ -1728,7 +1727,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var yl=r.yl||{inRange:false};
     var showYL=(r.symptoms&&r.symptoms!=='none');
     var ylH=showYL?(yl.inRange?220:140):0;
-    var estH=272+80+90+240+180+ylH+160+(r.notes?80:0)+(r.sdN>0&&r.cornPrice>0&&r.nCost>0?(r.roiCapped?140:120):0)+80;
+    var satH=(fieldLoc && fieldLoc.satImgObj)?(cw*0.42+18):0;
+    var estH=272+80+90+240+180+ylH+160+satH+(r.notes?80:0)+(r.sdN>0&&r.cornPrice>0&&r.nCost>0?(r.roiCapped?140:120):0)+80;
     var cv=ge('report-canvas');
     cv.width=W*sc;cv.height=estH*sc;cv.style.width=W+'px';cv.style.height=estH+'px';
     var ctx=cv.getContext('2d');ctx.scale(sc,sc);
@@ -1746,6 +1746,31 @@ document.addEventListener('DOMContentLoaded', function() {
     if(r.hybrid){ctx.font='10px "DM Mono",monospace';ctx.fillText(r.hybrid,W-PAD,y+64);}
     ctx.textAlign='left';y+=68;
     ctx.strokeStyle=C.gold;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(PAD,y);ctx.lineTo(W-PAD,y);ctx.stroke();y+=16;
+    /* Field satellite image at top of report */
+    try{
+    if(fieldLoc && fieldLoc.satImgObj){
+      var stW=cw, stH=Math.round(cw*0.42), stx=PAD, sty=y;
+      ctx.save();
+      ctx.beginPath();
+      if(ctx.roundRect) ctx.roundRect(stx,sty,stW,stH,8); else ctx.rect(stx,sty,stW,stH);
+      ctx.clip();
+      var _im=fieldLoc.satImgObj, _sc=Math.max(stW/_im.width, stH/_im.height);
+      var _dw=_im.width*_sc, _dh=_im.height*_sc;
+      ctx.drawImage(_im, stx+(stW-_dw)/2, sty+(stH-_dh)/2, _dw, _dh);
+      ctx.restore();
+      ctx.strokeStyle=C.gold;ctx.lineWidth=1.5;
+      if(ctx.roundRect){ctx.beginPath();ctx.roundRect(stx,sty,stW,stH,8);ctx.stroke();}
+      else ctx.strokeRect(stx,sty,stW,stH);
+      /* location caption overlay */
+      ctx.fillStyle='rgba(28,26,22,0.78)';ctx.fillRect(stx,sty+stH-22,stW,22);
+      ctx.fillStyle='#e8dcc0';ctx.font='10px "DM Mono",monospace';ctx.textAlign='left';
+      ctx.fillText('\ud83d\udccd '+(fieldLoc.place||'Field location'),stx+10,sty+stH-8);
+      if(fieldLoc.lat!=null){ctx.textAlign='right';ctx.fillText(fieldLoc.lat.toFixed(4)+', '+fieldLoc.lon.toFixed(4),stx+stW-10,sty+stH-8);ctx.textAlign='left';}
+      ctx.fillStyle=C.muted;ctx.font='7px "DM Mono",monospace';ctx.textAlign='right';
+      ctx.fillText('Source: Esri World Imagery',W-PAD,sty+stH+11);ctx.textAlign='left';
+      y+=stH+18;
+    }
+    }catch(_stErr){ ctx.textAlign='left'; }
     drawAgroBar(ctx,PAD,y,cw);y+=72;
     /* Info bar */
     roundRect(ctx,PAD,y,cw,44,4,C.gold,null);
