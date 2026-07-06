@@ -274,7 +274,11 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
           <input type="range" id="sat-zoom" min="0" max="6" step="1" value="2" style="flex:1;accent-color:var(--gold);" oninput="adjustSatZoom(this.value)">
           <span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);white-space:nowrap;">WIDE</span>
         </div>
-        <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);text-align:center;margin-top:2px;" id="sat-zoom-lbl">~500 m view</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:2px;">
+          <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);" id="sat-zoom-lbl">~500 m view</div>
+          <button onclick="recenterSat()" style="font-family:'DM Mono',monospace;font-size:7px;letter-spacing:0.5px;color:var(--gold-d);background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;cursor:pointer;">RECENTER</button>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);text-align:center;margin-top:3px;opacity:0.7;">Drag image to reposition \u00b7 slider to zoom</div>
         <div id="field-loc-lbl" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dark);text-align:center;margin-top:6px;font-weight:600;"></div>
         <div id="field-coord-lbl" style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);text-align:center;margin-top:2px;"></div>
       </div>
@@ -1518,7 +1522,7 @@ function wxMult(key) {
 // ═══════════════════════════════════════════════════════
 // FIELD LOCATION + SATELLITE IMAGE (GPS)
 // ═══════════════════════════════════════════════════════
-var fieldLoc = { lat:null, lon:null, place:'', satDataUrl:null };
+var fieldLoc = { lat:null, lon:null, place:'', satDataUrl:null, satImgObj:null, panLat:0, panLon:0, zoomIdx:2 };
 
 function captureFieldLocation(){
   var btn = document.getElementById('gps-btn');
@@ -1529,6 +1533,7 @@ function captureFieldLocation(){
   navigator.geolocation.getCurrentPosition(function(pos){
     var lat = pos.coords.latitude, lon = pos.coords.longitude;
     fieldLoc.lat = lat; fieldLoc.lon = lon;
+    fieldLoc.panLat = 0; fieldLoc.panLon = 0;
     status.textContent = 'Location found \u00b7 loading satellite + forecast\u2026';
     document.getElementById('field-coord-lbl').textContent =
       lat.toFixed(5)+'\u00b0'+(lat>=0?'N':'S')+' \u00b7 '+Math.abs(lon).toFixed(5)+'\u00b0'+(lon>=0?'E':'W');
@@ -1556,9 +1561,14 @@ var SAT_ZOOM_LABELS = ['~250 m', '~350 m', '~500 m', '~750 m', '~1.1 km', '~1.7 
 function loadFieldSatellite(lat, lon, zoomIdx){
   // Esri World Imagery static export (free, no API key)
   if(zoomIdx==null){ var ze=document.getElementById('sat-zoom'); zoomIdx = ze?parseInt(ze.value):2; }
+  fieldLoc.zoomIdx = zoomIdx;
   var d = SAT_ZOOM_STEPS[zoomIdx] || 0.0022;
   var lbl=document.getElementById('sat-zoom-lbl'); if(lbl) lbl.textContent=(SAT_ZOOM_LABELS[zoomIdx]||'')+' view';
-  var bbox = (lon-d)+','+(lat-d)+','+(lon+d)+','+(lat+d);
+  // Apply pan offset (viewed center = GPS point + pan)
+  var cLat = lat + (fieldLoc.panLat||0);
+  var cLon = lon + (fieldLoc.panLon||0);
+  fieldLoc.viewLat = cLat; fieldLoc.viewLon = cLon; fieldLoc.viewD = d;
+  var bbox = (cLon-d)+','+(cLat-d)+','+(cLon+d)+','+(cLat+d);
   var url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export'
     + '?bbox=' + bbox
     + '&bboxSR=4326&size=600,600&imageSR=3857&format=jpg&f=image';
@@ -1585,6 +1595,7 @@ function loadFieldSatellite(lat, lon, zoomIdx){
     status.textContent = '';
     btn.disabled = false;
     btn.textContent = 'Update Field Location';
+    wireSatPan();
   };
   loader.onerror = function(){
     // Still show the image directly even if data-url conversion fails
@@ -1600,6 +1611,67 @@ function loadFieldSatellite(lat, lon, zoomIdx){
 function adjustSatZoom(idx){
   if(fieldLoc.lat==null) return;
   loadFieldSatellite(fieldLoc.lat, fieldLoc.lon, parseInt(idx));
+}
+
+// ── SATELLITE PAN (drag to recenter) ──────────────────────────────
+var _satPan = { dragging:false, startX:0, startY:0, accumX:0, accumY:0, timer:null };
+
+function satPanStart(e){
+  if(fieldLoc.lat==null) return;
+  _satPan.dragging = true;
+  var p = e.touches ? e.touches[0] : e;
+  _satPan.startX = p.clientX; _satPan.startY = p.clientY;
+  _satPan.accumX = 0; _satPan.accumY = 0;
+  var img=document.getElementById('field-sat-img'); if(img) img.style.cursor='grabbing';
+}
+
+function satPanMove(e){
+  if(!_satPan.dragging) return;
+  if(e.cancelable) e.preventDefault();
+  var p = e.touches ? e.touches[0] : e;
+  var dx = p.clientX - _satPan.startX;
+  var dy = p.clientY - _satPan.startY;
+  _satPan.accumX = dx; _satPan.accumY = dy;
+  // Live visual feedback: shift the image via transform
+  var img=document.getElementById('field-sat-img');
+  if(img) img.style.transform = 'translate('+dx+'px,'+dy+'px)';
+}
+
+function satPanEnd(){
+  if(!_satPan.dragging) return;
+  _satPan.dragging = false;
+  var img=document.getElementById('field-sat-img');
+  if(img){ img.style.cursor='grab'; }
+  var wrap=document.getElementById('field-sat-wrap');
+  var w = wrap ? wrap.offsetWidth : 300;
+  // Convert pixel drag to degree offset. Image spans 2*d degrees across w px.
+  // Drag right (positive dx) should move view left (west) => subtract from lon.
+  var d = fieldLoc.viewD || 0.0022;
+  var degPerPx = (2*d) / w;
+  fieldLoc.panLon = (fieldLoc.panLon||0) - _satPan.accumX * degPerPx;
+  fieldLoc.panLat = (fieldLoc.panLat||0) + _satPan.accumY * degPerPx; // drag down => move view north
+  if(img) img.style.transform = '';
+  loadFieldSatellite(fieldLoc.lat, fieldLoc.lon, fieldLoc.zoomIdx);
+}
+
+function recenterSat(){
+  if(fieldLoc.lat==null) return;
+  fieldLoc.panLat = 0; fieldLoc.panLon = 0;
+  loadFieldSatellite(fieldLoc.lat, fieldLoc.lon, fieldLoc.zoomIdx);
+}
+
+function wireSatPan(){
+  var img = document.getElementById('field-sat-img');
+  if(!img || img._panWired) return;
+  img._panWired = true;
+  img.style.cursor = 'grab';
+  img.style.touchAction = 'none';
+  img.addEventListener('mousedown', satPanStart);
+  window.addEventListener('mousemove', satPanMove);
+  window.addEventListener('mouseup', satPanEnd);
+  img.addEventListener('touchstart', satPanStart, {passive:false});
+  img.addEventListener('touchmove', satPanMove, {passive:false});
+  img.addEventListener('touchend', satPanEnd);
 }
 
 function reverseGeocodeField(lat, lon){
