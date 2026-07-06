@@ -1604,6 +1604,7 @@ function loadFieldSatellite(lat, lon, zoomIdx){
     status.textContent = 'Satellite image loaded (may not embed in report).';
     btn.disabled = false;
     btn.textContent = 'Update Field Location';
+    wireSatPan();
   };
   loader.src = url;
 }
@@ -1619,8 +1620,7 @@ var _satPan = { dragging:false, startX:0, startY:0, accumX:0, accumY:0, timer:nu
 function satPanStart(e){
   if(fieldLoc.lat==null) return;
   _satPan.dragging = true;
-  var p = e.touches ? e.touches[0] : e;
-  _satPan.startX = p.clientX; _satPan.startY = p.clientY;
+  _satPan.startX = e.clientX; _satPan.startY = e.clientY;
   _satPan.accumX = 0; _satPan.accumY = 0;
   var img=document.getElementById('field-sat-img'); if(img) img.style.cursor='grabbing';
 }
@@ -1628,11 +1628,9 @@ function satPanStart(e){
 function satPanMove(e){
   if(!_satPan.dragging) return;
   if(e.cancelable) e.preventDefault();
-  var p = e.touches ? e.touches[0] : e;
-  var dx = p.clientX - _satPan.startX;
-  var dy = p.clientY - _satPan.startY;
+  var dx = e.clientX - _satPan.startX;
+  var dy = e.clientY - _satPan.startY;
   _satPan.accumX = dx; _satPan.accumY = dy;
-  // Live visual feedback: shift the image via transform
   var img=document.getElementById('field-sat-img');
   if(img) img.style.transform = 'translate('+dx+'px,'+dy+'px)';
 }
@@ -1666,12 +1664,17 @@ function wireSatPan(){
   img._panWired = true;
   img.style.cursor = 'grab';
   img.style.touchAction = 'none';
-  img.addEventListener('mousedown', satPanStart);
-  window.addEventListener('mousemove', satPanMove);
-  window.addEventListener('mouseup', satPanEnd);
-  img.addEventListener('touchstart', satPanStart, {passive:false});
-  img.addEventListener('touchmove', satPanMove, {passive:false});
-  img.addEventListener('touchend', satPanEnd);
+  img.style.userSelect = 'none';
+  img.draggable = false;
+  img.ondragstart = function(){ return false; };
+  // Pointer events (unified mouse + touch)
+  img.addEventListener('pointerdown', function(e){
+    img.setPointerCapture && img.setPointerCapture(e.pointerId);
+    satPanStart(e);
+  });
+  img.addEventListener('pointermove', satPanMove);
+  img.addEventListener('pointerup', satPanEnd);
+  img.addEventListener('pointercancel', satPanEnd);
 }
 
 function reverseGeocodeField(lat, lon){
