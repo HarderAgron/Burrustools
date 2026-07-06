@@ -133,6 +133,29 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
     <div class="fg"><label>Field ID</label><input type="text" id="field" placeholder="Field name / ID"></div>
   </div>
   <div class="fg"><label>Yield Goal (bu/ac)</label><input type="number" id="yieldGoal" placeholder="e.g. 200" min="100" max="350"></div>
+  <div class="fg" style="margin-top:10px;">
+        <label>Field Location</label>
+        <button id="gps-btn" class="dlbtn gold" style="width:100%;justify-content:center;" onclick="captureFieldLocation()">Get Field Location</button>
+      </div>
+      <div id="gps-status" style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:6px;min-height:12px;text-align:center;"></div>
+      <div id="gps-result" style="display:none;margin-top:10px;">
+        <div style="position:relative;">
+          <div id="field-sat-wrap" style="border-radius:10px;overflow:auto;-webkit-overflow-scrolling:touch;border:1.5px solid var(--border);background:#1c1a16;aspect-ratio:1/1;touch-action:pan-x pan-y;">
+            <img id="field-sat-img" style="display:block;width:150%;max-width:none;height:auto;" alt="Field satellite view" draggable="false">
+          </div>
+          <div style="position:absolute;bottom:10px;left:10px;display:flex;flex-direction:column;gap:6px;z-index:5;pointer-events:none;">
+            <button onclick="zoomSat(1)" style="pointer-events:auto;width:38px;height:38px;border-radius:8px;border:1.5px solid var(--gold);background:rgba(28,26,22,0.85);color:var(--gold-l);font-size:22px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.4);">+</button>
+            <button onclick="zoomSat(-1)" style="pointer-events:auto;width:38px;height:38px;border-radius:8px;border:1.5px solid var(--gold);background:rgba(28,26,22,0.85);color:var(--gold-l);font-size:24px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.4);">−</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px;">
+          <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);" id="sat-zoom-lbl">~500 m view</div>
+          <button onclick="recenterSat()" style="font-family:'DM Mono',monospace;font-size:7px;letter-spacing:0.5px;color:var(--gold-d);background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;cursor:pointer;">RECENTER</button>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);text-align:center;margin-top:3px;opacity:0.7;">Scroll to reposition · +/− to zoom</div>
+        <div id="field-loc-lbl" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dark);text-align:center;margin-top:6px;font-weight:600;"></div>
+        <div id="field-coord-lbl" style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);text-align:center;margin-top:2px;"></div>
+      </div>
 </div>
 
 <!-- HYBRID -->
@@ -157,7 +180,7 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
   <div class="ctitle">Soil Properties</div>
   <div class="fg">
     <label>Soil Texture</label>
-    <button class="seg-btn" id="soil-gps-btn" onclick="detectSoilGPS()" style="width:100%;background:var(--gold,#c88c3c);color:#1a1208;border-color:var(--gold,#c88c3c);margin-bottom:6px;padding:11px;">📍 Detect Soil Type from GPS</button>
+    <button class="seg-btn" id="soil-gps-btn" onclick="detectSoilSmart()" style="width:100%;background:var(--gold,#c88c3c);color:#1a1208;border-color:var(--gold,#c88c3c);margin-bottom:6px;padding:11px;">📍 Detect Soil Type from GPS</button>
     <div class="hint" id="soil-gps-status" style="margin-bottom:8px;min-height:12px;"></div>
     <div class="seg grid2" id="seg-soilTexture">
       <button class="seg-btn"    data-val="sand">Sand / Loamy Sand</button>
@@ -671,6 +694,177 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
 
 </div><!-- end #main -->
 <script>
+// ═══ FIELD LOCATION + SATELLITE MAP (shared global scope) ═══
+var fieldLoc = { lat:null, lon:null, place:'', satDataUrl:null, satImgObj:null, baseImgObj:null };
+
+function captureFieldLocation(){
+  var btn = document.getElementById('gps-btn');
+  var status = document.getElementById('gps-status');
+  if(!navigator.geolocation){ status.textContent = 'Geolocation not supported on this device.'; return; }
+  btn.disabled = true;
+  status.textContent = 'Acquiring GPS location\u2026';
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var lat = pos.coords.latitude, lon = pos.coords.longitude;
+    fieldLoc.lat = lat; fieldLoc.lon = lon;
+    status.textContent = 'Location found \u00b7 loading satellite + forecast\u2026';
+    document.getElementById('field-coord-lbl').textContent =
+      lat.toFixed(5)+'\u00b0'+(lat>=0?'N':'S')+' \u00b7 '+Math.abs(lon).toFixed(5)+'\u00b0'+(lon>=0?'E':'W');
+    loadFieldSatellite(lat, lon);
+    reverseGeocodeField(lat, lon);
+    // Also detect soil type from the same coordinates
+    if(typeof window.detectSoilFromCoords === 'function'){
+      window.detectSoilFromCoords(lat, lon);
+    }
+  }, function(err){
+    btn.disabled = false;
+    var msg = 'Could not get location.';
+    if(err.code === 1) msg = 'Location permission denied. Enable location access and retry.';
+    else if(err.code === 2) msg = 'Location unavailable. Try again outdoors.';
+    else if(err.code === 3) msg = 'Location request timed out. Retry.';
+    status.textContent = msg;
+  }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
+}
+
+function loadFieldSatellite(lat, lon){
+  // Fetch a high-res wide-area image; native scroll + pinch-zoom handles pan/zoom smoothly.
+  var d = 0.0115; // half-width in degrees (~2.5 km across)
+  fieldLoc.captureLat = lat; fieldLoc.captureLon = lon; fieldLoc.captureHalfDeg = d;
+  var bbox = (lon-d)+','+(lat-d)+','+(lon+d)+','+(lat+d);
+  var url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export'
+    + '?bbox=' + bbox
+    + '&bboxSR=4326&size=1600,1600&imageSR=3857&format=jpg&f=image';
+  var img = document.getElementById('field-sat-img');
+  var res = document.getElementById('gps-result');
+  var status = document.getElementById('gps-status');
+  var btn = document.getElementById('gps-btn');
+  var wrap = document.getElementById('field-sat-wrap');
+  var loader = new Image();
+  loader.crossOrigin = 'anonymous';
+  loader.onload = function(){
+    res.style.display = 'block';
+    fieldLoc.baseImgObj = loader;
+    fieldLoc.zoomPct = 150;
+    img.style.width = '150%';
+    img.src = url;
+    // Center the scroll on the middle (GPS point) after layout settles
+    setTimeout(function(){
+      if(wrap){ wrap.scrollLeft = (wrap.scrollWidth - wrap.clientWidth)/2;
+                wrap.scrollTop  = (wrap.scrollHeight - wrap.clientHeight)/2; }
+      captureSatView();
+    }, 60);
+    // Recapture the framed view whenever the user finishes scrolling/zooming
+    if(wrap && !wrap._satScrollWired){
+      wrap._satScrollWired = true;
+      var t=null;
+      wrap.addEventListener('scroll', function(){ clearTimeout(t); t=setTimeout(captureSatView, 250); });
+    }
+    status.textContent = '';
+    btn.disabled = false;
+    btn.textContent = 'Update Field Location';
+    updateSatLabel();
+  };
+  loader.onerror = function(){
+    res.style.display = 'block';
+    img.src = url;
+    status.textContent = 'Satellite image loaded (may not embed in report).';
+    btn.disabled = false;
+    btn.textContent = 'Update Field Location';
+  };
+  loader.src = url;
+}
+
+function updateSatLabel(){
+  var lbl = document.getElementById('sat-zoom-lbl');
+  var wrap = document.getElementById('field-sat-wrap');
+  var img = document.getElementById('field-sat-img');
+  if(!lbl || !wrap || !img) return;
+  // visible fraction of the full image = clientWidth / scrollWidth
+  var frac = wrap.clientWidth / (wrap.scrollWidth || wrap.clientWidth);
+  var totalM = 2 * (fieldLoc.captureHalfDeg||0.006) * 111000;
+  var visM = Math.round(totalM * frac);
+  lbl.textContent = (visM>=1000 ? (visM/1000).toFixed(1)+' km' : visM+' m') + ' view';
+}
+
+function captureSatView(){
+  try {
+    var wrap = document.getElementById('field-sat-wrap');
+    var base = fieldLoc.baseImgObj;
+    if(!wrap || !base) return;
+    updateSatLabel();
+    var bw = base.naturalWidth, bh = base.naturalHeight;
+    // Map the scroll viewport onto base-image pixels
+    var sx = (wrap.scrollLeft / wrap.scrollWidth) * bw;
+    var sy = (wrap.scrollTop  / wrap.scrollHeight) * bh;
+    var sw = (wrap.clientWidth  / wrap.scrollWidth) * bw;
+    var sh = (wrap.clientHeight / wrap.scrollHeight) * bh;
+    var out = document.createElement('canvas');
+    out.width = 700; out.height = 700;
+    out.getContext('2d').drawImage(base, sx, sy, sw, sh, 0, 0, 700, 700);
+    fieldLoc.satDataUrl = out.toDataURL('image/jpeg', 0.85);
+    var sImg = new Image();
+    sImg.onload = function(){ fieldLoc.satImgObj = sImg; };
+    sImg.src = fieldLoc.satDataUrl;
+  } catch(e){ /* tainted canvas - report skips image */ }
+}
+
+function recenterSat(){
+  var wrap = document.getElementById('field-sat-wrap');
+  if(!wrap || !fieldLoc.baseImgObj) return;
+  wrap.scrollLeft = (wrap.scrollWidth - wrap.clientWidth)/2;
+  wrap.scrollTop  = (wrap.scrollHeight - wrap.clientHeight)/2;
+  setTimeout(captureSatView, 60);
+}
+
+function zoomSat(dir){
+  var wrap = document.getElementById('field-sat-wrap');
+  var img = document.getElementById('field-sat-img');
+  if(!wrap || !img || !fieldLoc.baseImgObj) return;
+  // Current zoom = image width as % (100% = fit, higher = zoomed in)
+  var cur = fieldLoc.zoomPct || 200;
+  var next = dir > 0 ? cur * 1.35 : cur / 1.35;
+  next = Math.max(100, Math.min(700, next)); // 100% = full 2.5km image, 700% = deep zoom //1.3km) to 800% (deep zoom)
+  fieldLoc.zoomPct = next;
+  // Remember the current center point (as a fraction of scrollable area)
+  var cxFrac = (wrap.scrollLeft + wrap.clientWidth/2) / (wrap.scrollWidth || 1);
+  var cyFrac = (wrap.scrollTop + wrap.clientHeight/2) / (wrap.scrollHeight || 1);
+  img.style.width = next + '%';
+  // Re-center on the same fractional point after the width change reflows
+  requestAnimationFrame(function(){
+    wrap.scrollLeft = cxFrac * wrap.scrollWidth - wrap.clientWidth/2;
+    wrap.scrollTop  = cyFrac * wrap.scrollHeight - wrap.clientHeight/2;
+    updateSatLabel();
+    clearTimeout(fieldLoc._zTimer);
+    fieldLoc._zTimer = setTimeout(captureSatView, 200);
+  });
+}
+
+function reverseGeocodeField(lat, lon){
+  fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lon+'&zoom=12')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var a = data.address || {};
+      var county = a.county || a.city || a.town || a.village || '';
+      var state = a.state || '';
+      var place = [county, state].filter(Boolean).join(', ');
+      fieldLoc.place = place || 'Location captured';
+      document.getElementById('field-loc-lbl').textContent = fieldLoc.place;
+    })
+    .catch(function(){
+      fieldLoc.place = 'GPS location';
+      document.getElementById('field-loc-lbl').textContent = 'GPS location captured';
+    });
+}
+
+// Soil button: reuse captured GPS location if available, else request GPS
+function detectSoilSmart(){
+  if(fieldLoc.lat != null && typeof window.detectSoilFromCoords === 'function'){
+    window.detectSoilFromCoords(fieldLoc.lat, fieldLoc.lon);
+  } else if(typeof window.detectSoilGPS === 'function'){
+    window.detectSoilGPS();
+  }
+}
+</script>
+<script>
 document.addEventListener('DOMContentLoaded', function() {
   // Load profile photo from localStorage
   var _avPh = localStorage.getItem('u-photo');
@@ -711,6 +905,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function setSoilStatus(msg) { var s = ge('soil-gps-status'); if (s) s.textContent = msg; }
 
+  window.detectSoilFromCoords = function(lat, lon) {
+    var btn = ge('soil-gps-btn');
+    if (btn) btn.disabled = true;
+    setSoilStatus('Location found · Querying SoilGrids…');
+    _soilLookup(lat, lon, btn);
+  };
+
   window.detectSoilGPS = function() {
     if (!navigator.geolocation) { setSoilStatus('⚠ GPS not supported on this device/browser.'); return; }
     var btn = ge('soil-gps-btn');
@@ -719,6 +920,17 @@ document.addEventListener('DOMContentLoaded', function() {
     navigator.geolocation.getCurrentPosition(function(pos) {
       var lat = pos.coords.latitude, lon = pos.coords.longitude;
       setSoilStatus('Location found · Querying SoilGrids…');
+      _soilLookup(lat, lon, btn);
+    }, function(err){
+      var msgs = {1:'Location permission denied. Enable it or select texture manually.',
+                  2:'Location unavailable. Try again or select manually.',
+                  3:'Location request timed out. Try again or select manually.'};
+      setSoilStatus('⚠ ' + (msgs[err.code] || 'Could not get GPS location.'));
+      if (btn) btn.disabled = false;
+    }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
+  };
+
+  function _soilLookup(lat, lon, btn){
       // SoilGrids: topsoil (0–5cm) clay/sand/silt, mean value, in g/kg (×0.1 = %).
       var url = 'https://rest.isric.org/soilgrids/v2.0/properties/query?lon=' + lon + '&lat=' + lat +
                 '&property=clay&property=sand&property=silt&depth=0-5cm&value=mean';
@@ -745,14 +957,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setSoilStatus('⚠ ' + (e.message || 'Could not fetch soil data.') + ' Select texture manually.');
         if (btn) btn.disabled = false;
       });
-    }, function(err){
-      var msgs = {1:'Location permission denied. Enable it or select texture manually.',
-                  2:'Location unavailable. Try again or select manually.',
-                  3:'Location request timed out. Try again or select manually.'};
-      setSoilStatus('⚠ ' + (msgs[err.code] || 'Could not get GPS location.'));
-      if (btn) btn.disabled = false;
-    }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
-  };
+  }
 
   /* ── HYBRID DATABASE ── */
   var HYBRIDS = {
