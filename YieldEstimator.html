@@ -171,9 +171,22 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
       <div class="hint" id="hybridHint">Start typing a hybrid name or number — kernels/bu fills in automatically.</div>
     </div>
     <div class="fg">
-      <label>Kernels Per Bushel</label>
+      <label>Grain Fill Condition</label>
+      <div class="seg" id="seg-stress">
+        <button class="seg-btn on" data-adj="0" data-lbl="Excellent">Excellent<br><span style="font-size:8px;opacity:.75;">baseline</span></button>
+        <button class="seg-btn" data-adj="5" data-lbl="Normal">Normal<br><span style="font-size:8px;opacity:.75;">+5%</span></button>
+        <button class="seg-btn" data-adj="12" data-lbl="Moderate">Moderate<br><span style="font-size:8px;opacity:.75;">+12%</span></button>
+        <button class="seg-btn" data-adj="20" data-lbl="Severe">Severe<br><span style="font-size:8px;opacity:.75;">+20%</span></button>
+      </div>
+      <div class="hint" id="stressHint">Stressed kernels weigh less, so more of them make a bushel &mdash; this raises kernels/bu and lowers the estimate.</div>
+      <button class="dlbtn outline" id="wxBtn" style="width:100%;margin-top:8px;">&#127782; Check Grain Fill Weather</button>
+      <div class="cv-status" id="wxStatus" style="margin-top:6px;min-height:12px;"></div>
+      <div id="wxDetail" style="display:none;background:#f0e8d8;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-top:8px;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);line-height:1.8;"></div>
+    </div>
+    <div class="fg">
+      <label>Kernels Per Bushel <span id="kpbAdjTag" style="color:var(--gold-d);font-size:8px;"></span></label>
       <input type="number" id="kernelsPerBu" inputmode="numeric" value="80000">
-      <div class="hint">Lower = bolder kernels = more bu. 75k&ndash;90k typical.</div>
+      <div class="hint" id="kpbHint">Lower = bolder kernels = more bu. 75k&ndash;105k typical range.</div>
     </div>
   </div>
 
@@ -1005,7 +1018,8 @@ function drawReport(earImgs){
   x.fillText('County: '+co+'    '+dt,PAD,280);
   x.fillText('GPS: '+loc,PAD,306);
   var hs=ge('hybridSelect'); var hname=(hs.value?hs.options[hs.selectedIndex].textContent.split('  (')[0]:'Generic');
-  x.fillText('Hybrid: '+hname,PAD,332);
+  var sAdj=stressAdj();
+  x.fillText('Hybrid: '+hname+'   ·   Fill: '+sAdj.lbl+(sAdj.pct?(' (+'+sAdj.pct+'%)'):''),PAD,332);
 
   var y=356;
 
@@ -1186,43 +1200,43 @@ ge('previewReportBtn').addEventListener('click',previewReport);
 
 /* ── HYBRID KERNEL WEIGHT DATA (Burrus assigned kernels/bu) ── */
 var HYBRIDS=[
-  {n:"Power Plus 8J797 VE", k:85000},
-  {n:"Power Plus 1K18 Q",   k:85000},
-  {n:"Power Plus 2W400 Q",  k:85000},
-  {n:"Power Plus 1R47 VE",  k:85000},
-  {n:"Power Plus 2A17 VE",  k:85000},
-  {n:"Power Plus 2J67 Q",   k:85000},
-  {n:"Power Plus 3H48 VE",  k:85000},
-  {n:"Power Plus 4P27 VE",  k:80000},
-  {n:"Power Plus 5F17 Q",   k:80000},
-  {n:"Power Plus 5M76 VE",  k:80000},
-  {n:"Power Plus 6G88 VE",  k:80000},
-  {n:"Burrus 6U77 SSP",     k:80000},
-  {n:"Burrus 7T27 SSP",     k:75000},
-  {n:"Power Plus 7R68 VE",  k:85000},
-  {n:"Power Plus 8J697AM",  k:85000},
-  {n:"Power Plus 1K12AM",   k:80000},
-  {n:"Power Plus 1U41AM",   k:85000},
-  {n:"Burrus 1R62 PCE",     k:85000},
-  {n:"Burrus 2A13 PCE",     k:85000},
-  {n:"Power Plus 3G31AM",   k:85000},
-  {n:"Burrus 4W42 PCE",     k:85000},
-  {n:"Power Plus 4V73AM",   k:85000},
-  {n:"Burrus 5C11 PCE",     k:85000},
-  {n:"Power Plus 5J21AM",   k:80000},
-  {n:"Burrus 6M12 AA",      k:75000},
-  {n:"Burrus 6N54 VT2P",    k:75000},
-  {n:"Burrus 6Y61 DG VT2P", k:75000},
-  {n:"Burrus 7B14 PCE",     k:85000},
-  {n:"Burrus 7F33 VT2P",    k:75000},
-  {n:"Burrus 7L62 AA",      k:75000},
-  {n:"Burrus 7P71 VT2P",    k:75000},
-  {n:"Burrus 8A12 VT2P",    k:75000},
-  {n:"Burrus 8K34 VT2P",    k:75000},
-  {n:"Power Plus 4R40",     k:80000},
-  {n:"Power Plus 4W40",     k:80000},
-  {n:"Power Plus 6H80",     k:75000},
-  {n:"Burrus 7F30",         k:75000}
+  {n:"Power Plus 8J797 VE", k:90000},
+  {n:"Power Plus 1K18 Q",   k:90000},
+  {n:"Power Plus 2W400 Q",  k:90000},
+  {n:"Power Plus 1R47 VE",  k:90000},
+  {n:"Power Plus 2A17 VE",  k:90000},
+  {n:"Power Plus 2J67 Q",   k:90000},
+  {n:"Power Plus 3H48 VE",  k:90000},
+  {n:"Power Plus 4P27 VE",  k:85000},
+  {n:"Power Plus 5F17 Q",   k:85000},
+  {n:"Power Plus 5M76 VE",  k:85000},
+  {n:"Power Plus 6G88 VE",  k:85000},
+  {n:"Burrus 6U77 SSP",     k:85000},
+  {n:"Burrus 7T27 SSP",     k:80000},
+  {n:"Power Plus 7R68 VE",  k:90000},
+  {n:"Power Plus 8J697AM",  k:90000},
+  {n:"Power Plus 1K12AM",   k:85000},
+  {n:"Power Plus 1U41AM",   k:90000},
+  {n:"Burrus 1R62 PCE",     k:90000},
+  {n:"Burrus 2A13 PCE",     k:90000},
+  {n:"Power Plus 3G31AM",   k:90000},
+  {n:"Burrus 4W42 PCE",     k:90000},
+  {n:"Power Plus 4V73AM",   k:90000},
+  {n:"Burrus 5C11 PCE",     k:90000},
+  {n:"Power Plus 5J21AM",   k:85000},
+  {n:"Burrus 6M12 AA",      k:80000},
+  {n:"Burrus 6N54 VT2P",    k:80000},
+  {n:"Burrus 6Y61 DG VT2P", k:80000},
+  {n:"Burrus 7B14 PCE",     k:90000},
+  {n:"Burrus 7F33 VT2P",    k:80000},
+  {n:"Burrus 7L62 AA",      k:80000},
+  {n:"Burrus 7P71 VT2P",    k:80000},
+  {n:"Burrus 8A12 VT2P",    k:80000},
+  {n:"Burrus 8K34 VT2P",    k:80000},
+  {n:"Power Plus 4R40",     k:85000},
+  {n:"Power Plus 4W40",     k:85000},
+  {n:"Power Plus 6H80",     k:80000},
+  {n:"Burrus 7F30",         k:80000}
 ];
 (function setupHybridTypeahead(){
   var sel=ge('hybridSelect'), inp=ge('hybridInput'), list=ge('hybridList');
@@ -1242,14 +1256,14 @@ var HYBRIDS=[
         if(sel.options[i].dataset && sel.options[i].dataset.name===h.n){sel.selectedIndex=i;break;}
       }
       inp.value=h.n;
-      ge('kernelsPerBu').value=h.k;
-      ge('hybridHint').textContent=h.n+' → '+h.k.toLocaleString()+' kernels/bu (assigned).';
+      kpbBaseline=h.k;                       // hybrid's good-fill assignment
+      ge('hybridHint').textContent=h.n+' → '+h.k.toLocaleString()+' kernels/bu at good fill.';
     }else{
       sel.selectedIndex=0;
-      ge('kernelsPerBu').value=80000;
+      kpbBaseline=80000;
       ge('hybridHint').textContent='Generic default (80,000) — start typing to pick a hybrid.';
     }
-    if(ge('resultsArea').style.display==='block')calcYield();
+    applyStress();                           // re-apply the current stress level on top
   }
 
   function render(matches){
@@ -1318,6 +1332,143 @@ var HYBRIDS=[
   setOpen(saved===null?true:saved==='1');
   btn.addEventListener('click',function(){setOpen(!body.classList.contains('open'));});
 })();
+
+/* ── GRAIN FILL STRESS ADJUSTMENT ── */
+// Hybrid kernels/bu values are assigned for GOOD grain fill. Stress makes kernels
+// lighter, so it takes MORE of them per bushel — the adjustment raises kernels/bu.
+var kpbBaseline=80000;   // hybrid's assigned value (pre-stress)
+function stressAdj(){
+  var b=document.querySelector('#seg-stress .seg-btn.on');
+  return b?{pct:parseInt(b.dataset.adj)||0,lbl:b.dataset.lbl||'Excellent'}:{pct:0,lbl:'Excellent'};
+}
+function applyStress(){
+  var s=stressAdj();
+  var adjusted=Math.round(kpbBaseline*(1+s.pct/100));
+  ge('kernelsPerBu').value=adjusted;
+  ge('kpbAdjTag').textContent=s.pct?('· '+s.lbl+' +'+s.pct+'%'):'· baseline';
+  if(s.pct){
+    ge('kpbHint').textContent=kpbBaseline.toLocaleString()+' baseline +'+s.pct+'% ('+s.lbl.toLowerCase()+' fill) = '+adjusted.toLocaleString()+' kernels/bu.';
+  }else{
+    ge('kpbHint').textContent='Lower = bolder kernels = more bu. 75k–105k typical range.';
+  }
+  if(ge('resultsArea').style.display==='block')calcYield();
+}
+document.querySelectorAll('#seg-stress .seg-btn').forEach(function(b){
+  b.onclick=function(){
+    document.querySelectorAll('#seg-stress .seg-btn').forEach(function(x){x.classList.remove('on');});
+    b.classList.add('on');
+    applyStress();
+  };
+});
+// typing a kernels/bu value by hand resets the baseline to that number
+ge('kernelsPerBu').addEventListener('change',function(){
+  var v=parseInt(this.value)||0;
+  if(v>0){
+    var s=stressAdj();
+    kpbBaseline=Math.round(v/(1+s.pct/100));   // back out the stress to store a clean baseline
+  }
+});
+
+/* ── GRAIN FILL WEATHER (Open-Meteo archive, keyless) ── */
+// Typical Corn Belt grain fill window: silking (~mid-July) through black layer (~early Sept).
+// Pulls actual rainfall + heat for that window at the field's GPS point and suggests a
+// starting stress level. The user always has the final say via the buttons.
+var GF_START={m:6,d:15};   // Jul 15 (month is 0-indexed)
+var GF_END={m:8,d:5};      // Sep 5
+
+function gfWindow(){
+  // use the sample date's year; if sampling before the window ends, clamp to yesterday
+  var sd=ge('sampleDate').value;
+  var yr=sd?parseInt(sd.slice(0,4)):new Date().getFullYear();
+  var start=new Date(yr,GF_START.m,GF_START.d);
+  var end=new Date(yr,GF_END.m,GF_END.d);
+  var yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+  if(end>yesterday)end=yesterday;                 // archive has no future data
+  return {start:start,end:end,yr:yr};
+}
+function fmtD(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+ge('wxBtn').addEventListener('click',function(){
+  if(fieldLoc.lat==null){
+    ge('wxStatus').innerHTML='<span style="color:#c0392b">Get the field location first (Report Info above).</span>';
+    return;
+  }
+  var w=gfWindow();
+  if(w.end<=w.start){
+    ge('wxStatus').innerHTML='<span style="color:#c0392b">Grain fill window hasn\'t started yet for '+w.yr+'.</span>';
+    return;
+  }
+  var btn=ge('wxBtn');btn.disabled=true;
+  ge('wxStatus').innerHTML='<span class="spinner"></span>Pulling '+fmtD(w.start).slice(5)+' → '+fmtD(w.end).slice(5)+' weather…';
+  var url='https://archive-api.open-meteo.com/v1/archive?latitude='+fieldLoc.lat+'&longitude='+fieldLoc.lon
+    +'&start_date='+fmtD(w.start)+'&end_date='+fmtD(w.end)
+    +'&daily=precipitation_sum,temperature_2m_max'
+    +'&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=America%2FChicago';
+  fetch(url).then(function(r){
+    if(!r.ok)throw new Error('Weather service unavailable');
+    return r.json();
+  }).then(function(j){
+    var d=j.daily||{};
+    var rain=(d.precipitation_sum||[]).filter(function(v){return v!=null;});
+    var tmax=(d.temperature_2m_max||[]).filter(function(v){return v!=null;});
+    if(!rain.length||!tmax.length)throw new Error('No archive data for this window');
+    var days=rain.length;
+    var totalRain=rain.reduce(function(a,b){return a+b;},0);
+    var hotDays=tmax.filter(function(t){return t>=90;}).length;
+    var veryHot=tmax.filter(function(t){return t>=95;}).length;
+    // longest dry streak (<0.10" counts as dry)
+    var streak=0,maxStreak=0;
+    rain.forEach(function(v){ if(v<0.10){streak++;maxStreak=Math.max(maxStreak,streak);} else streak=0; });
+    // expected rain over the window (~0.20 in/day is a comfortable fill pace)
+    var expRain=days*0.20;
+    var rainPct=Math.round((totalRain/expRain)*100);
+    scoreGrainFill({days:days,totalRain:totalRain,rainPct:rainPct,hotDays:hotDays,veryHot:veryHot,maxStreak:maxStreak,w:w});
+    btn.disabled=false;
+  }).catch(function(e){
+    ge('wxStatus').innerHTML='<span style="color:#c0392b">'+(e.message||'Weather lookup failed')+' — set fill condition by hand.</span>';
+    btn.disabled=false;
+  });
+});
+
+function scoreGrainFill(s){
+  // Simple additive stress score → suggested level. Deliberately conservative:
+  // weather is a proxy, and the agronomist's eyes beat it.
+  var pts=0, why=[];
+  if(s.rainPct<50){pts+=3;why.push('rain '+s.rainPct+'% of normal (severe deficit)');}
+  else if(s.rainPct<75){pts+=2;why.push('rain '+s.rainPct+'% of normal (dry)');}
+  else if(s.rainPct<90){pts+=1;why.push('rain '+s.rainPct+'% of normal (slightly dry)');}
+  else{why.push('rain '+s.rainPct+'% of normal (adequate)');}
+
+  if(s.maxStreak>=14){pts+=2;why.push(s.maxStreak+'-day dry streak');}
+  else if(s.maxStreak>=10){pts+=1;why.push(s.maxStreak+'-day dry streak');}
+
+  if(s.veryHot>=7){pts+=2;why.push(s.veryHot+' days ≥95°F');}
+  else if(s.hotDays>=14){pts+=1;why.push(s.hotDays+' days ≥90°F');}
+  else if(s.hotDays>0){why.push(s.hotDays+' days ≥90°F');}
+
+  var lvl = pts>=5?'Severe' : pts>=3?'Moderate' : pts>=1?'Normal' : 'Excellent';
+  // set the matching button
+  var target=null;
+  document.querySelectorAll('#seg-stress .seg-btn').forEach(function(b){
+    if(b.dataset.lbl===lvl)target=b;
+  });
+  if(target){
+    document.querySelectorAll('#seg-stress .seg-btn').forEach(function(x){x.classList.remove('on');});
+    target.classList.add('on');
+    applyStress();
+  }
+  ge('wxStatus').innerHTML='Suggested: <b style="color:var(--gold-d)">'+lvl+' fill</b> — adjust if your eyes say otherwise.';
+  ge('wxDetail').style.display='block';
+  ge('wxDetail').innerHTML=
+    '<b>'+fmtD(s.w.start).slice(5)+' → '+fmtD(s.w.end).slice(5)+'</b> ('+s.days+' days at this field)<br>'
+    +'Rain: '+s.totalRain.toFixed(1)+'&quot; ('+s.rainPct+'% of ~'+(s.days*0.20).toFixed(1)+'&quot; normal)<br>'
+    +'Heat: '+s.hotDays+' days ≥90°F'+(s.veryHot?(', '+s.veryHot+' ≥95°F'):'')+'<br>'
+    +'Longest dry streak: '+s.maxStreak+' days<br>'
+    +'<span style="opacity:.75">Based on: '+why.join(' · ')+'</span><br>'
+    +'<span style="opacity:.75">Window is a regional average (Jul 15–Sep 5), not this field\'s actual silking date.</span>';
+}
 
 /* init */
 resetZone('len');resetZone('wid');
