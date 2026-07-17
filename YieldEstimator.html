@@ -145,8 +145,12 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
     <div class="ctitle"><span>Hybrid</span><span class="step">Optional</span></div>
     <div class="fg">
       <label>Hybrid</label>
-      <select id="hybridSelect"><option value="">Generic (80,000 kernels/bu)</option></select>
-      <div class="hint" id="hybridHint">Selecting a hybrid sets its assigned kernels/bu automatically.</div>
+      <div style="position:relative;">
+        <input type="text" id="hybridInput" placeholder="Type to search hybrids…" autocomplete="off" autocapitalize="characters">
+        <div id="hybridList" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:50;background:var(--panel);border:1.5px solid var(--gold);border-top:none;border-radius:0 0 8px 8px;max-height:220px;overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 6px 16px rgba(0,0,0,.18);"></div>
+      </div>
+      <select id="hybridSelect" style="display:none;"><option value="">Generic (80,000 kernels/bu)</option></select>
+      <div class="hint" id="hybridHint">Start typing a hybrid name or number — kernels/bu fills in automatically.</div>
     </div>
     <div class="fg">
       <label>Kernels Per Bushel</label>
@@ -1033,23 +1037,83 @@ var HYBRIDS=[
   {n:"Power Plus 6H80",     k:75000},
   {n:"Burrus 7F30",         k:75000}
 ];
-(function populateHybrids(){
-  var sel=ge('hybridSelect');
-  HYBRIDS.slice().sort(function(a,b){return a.n.localeCompare(b.n);}).forEach(function(h){
+(function setupHybridTypeahead(){
+  var sel=ge('hybridSelect'), inp=ge('hybridInput'), list=ge('hybridList');
+  var sorted=HYBRIDS.slice().sort(function(a,b){return a.n.localeCompare(b.n);});
+  // keep the hidden select populated so the report can read the chosen name
+  sorted.forEach(function(h){
     var o=document.createElement('option');
-    o.value=h.k; o.textContent=h.n+'  ('+(h.k/1000)+'k)';
+    o.value=h.k;o.textContent=h.n+'  ('+(h.k/1000)+'k)';
+    o.dataset.name=h.n;
     sel.appendChild(o);
   });
-  sel.addEventListener('change',function(){
-    var v=parseInt(this.value);
-    if(v){
-      ge('kernelsPerBu').value=v;
-      ge('hybridHint').textContent=this.options[this.selectedIndex].textContent.split('  (')[0]+' → '+v.toLocaleString()+' kernels/bu (assigned).';
+
+  function applyHybrid(h){
+    if(h){
+      // point the hidden select at the matching option (report reads this)
+      for(var i=0;i<sel.options.length;i++){
+        if(sel.options[i].dataset && sel.options[i].dataset.name===h.n){sel.selectedIndex=i;break;}
+      }
+      inp.value=h.n;
+      ge('kernelsPerBu').value=h.k;
+      ge('hybridHint').textContent=h.n+' → '+h.k.toLocaleString()+' kernels/bu (assigned).';
     }else{
+      sel.selectedIndex=0;
       ge('kernelsPerBu').value=80000;
-      ge('hybridHint').textContent='Generic default — pick a hybrid to use its assigned kernels/bu.';
+      ge('hybridHint').textContent='Generic default (80,000) — start typing to pick a hybrid.';
     }
     if(ge('resultsArea').style.display==='block')calcYield();
+  }
+
+  function render(matches){
+    list.innerHTML='';
+    if(!matches.length){list.style.display='none';return;}
+    matches.forEach(function(h){
+      var row=document.createElement('div');
+      row.style.cssText='padding:11px 12px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;';
+      var nm=document.createElement('span');
+      nm.style.cssText='font-family:"Source Serif 4",serif;font-size:14px;color:var(--dark);';
+      nm.textContent=h.n;
+      var kb=document.createElement('span');
+      kb.style.cssText='font-family:"DM Mono",monospace;font-size:10px;color:var(--gold-d);flex-shrink:0;';
+      kb.textContent=(h.k/1000)+'k';
+      row.appendChild(nm);row.appendChild(kb);
+      // use mousedown so it fires before the input's blur
+      row.addEventListener('mousedown',function(ev){
+        ev.preventDefault();
+        applyHybrid(h);
+        list.style.display='none';
+      });
+      list.appendChild(row);
+    });
+    list.style.display='block';
+  }
+
+  function search(q){
+    q=(q||'').trim().toLowerCase();
+    if(!q)return sorted;
+    // match on any part of the name; also allow bare numbers like "7t27"
+    return sorted.filter(function(h){return h.n.toLowerCase().indexOf(q)!==-1;});
+  }
+
+  inp.addEventListener('focus',function(){render(search(inp.value));});
+  inp.addEventListener('input',function(){
+    var q=inp.value.trim();
+    render(search(q));
+    if(!q)applyHybrid(null);
+  });
+  inp.addEventListener('blur',function(){
+    setTimeout(function(){
+      list.style.display='none';
+      // if the typed text exactly matches a hybrid, keep it; otherwise reset to generic
+      var q=inp.value.trim().toLowerCase();
+      if(!q){applyHybrid(null);return;}
+      var exact=sorted.filter(function(h){return h.n.toLowerCase()===q;})[0];
+      if(exact){applyHybrid(exact);return;}
+      var hits=search(q);
+      if(hits.length===1){applyHybrid(hits[0]);}          // single match → take it
+      else{inp.value='';applyHybrid(null);}                // ambiguous/no match → generic
+    },150);
   });
 })();
 
