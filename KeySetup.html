@@ -161,14 +161,12 @@ var QRLite = (function(){
   };
 
   function pickVersion(len){
-    // Capped at v6: versions 1-6 are round-trip verified against a real decoder.
-    // A realistic setup URL (~105 chars) fits inside v6 at ECC level M.
-    for (var v = 1; v <= 6; v++) {
-      var cciBits = 8;                            // v1-9 use an 8-bit count indicator
+    for (var v = 1; v <= 20; v++) {
+      var cciBits = v <= 9 ? 8 : 16;              // char count indicator width
       var needBits = 4 + cciBits + len * 8;
       if (dataCapacity(v) * 8 >= needBits) return v;
     }
-    throw new Error('URL too long for the scan code (' + len + ' chars, max ~105). Shorten the repo/folder name.');
+    throw new Error('URL too long for the scan code (' + len + ' chars).');
   }
 
   function buildData(bytes, v){
@@ -233,11 +231,17 @@ var QRLite = (function(){
       m[6][i] = (i % 2 === 0) ? 1 : 0; reserved[6][i] = 1;
       m[i][6] = (i % 2 === 0) ? 1 : 0; reserved[i][6] = 1;
     }
-    // alignment
+    // alignment patterns
     var ac = ALIGN[v];
     for (var a = 0; a < ac.length; a++) for (var b = 0; b < ac.length; b++) {
       var r = ac[a], c = ac[b];
-      if (reserved[r][c]) continue;
+      // Skip ONLY the three that would sit on a finder pattern. Alignment patterns
+      // that cross the timing row/column (e.g. (6,22) at v7) MUST still be drawn —
+      // testing reserved[r][c] here wrongly skips them, because timing reserves row/col 6.
+      var nearTL = (r <= 8 && c <= 8);
+      var nearTR = (r <= 8 && c >= n - 9);
+      var nearBL = (r >= n - 9 && c <= 8);
+      if (nearTL || nearTR || nearBL) continue;
       for (var dr = -2; dr <= 2; dr++) for (var dc = -2; dc <= 2; dc++) {
         var on = (Math.abs(dr) === 2 || Math.abs(dc) === 2 || (dr === 0 && dc === 0));
         m[r + dr][c + dc] = on ? 1 : 0;
