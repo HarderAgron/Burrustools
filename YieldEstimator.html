@@ -943,17 +943,25 @@ function drawAgroBar(ctx,PAD,y,cw){
 
 /* ── JPG FIELD REPORT ── */
 // Preload any ear photos so they can be drawn into the report synchronously
+// Preload ear photos (side = length, end = girth) so they draw synchronously
 function preloadEarImages(cb){
   var jobs=[];
   ears.forEach(function(e,i){
-    if(e && e.lenImg) jobs.push({i:i,src:e.lenImg});
+    if(!e)return;
+    if(e.lenImg) jobs.push({i:i,kind:'len',src:e.lenImg});
+    if(e.widImg) jobs.push({i:i,kind:'wid',src:e.widImg});
   });
   if(!jobs.length){cb({});return;}
   var out={},done=0;
+  function finish(){if(++done===jobs.length)cb(out);}
   jobs.forEach(function(j){
     var im=new Image();
-    im.onload=function(){out[j.i]=im;if(++done===jobs.length)cb(out);};
-    im.onerror=function(){if(++done===jobs.length)cb(out);};
+    im.onload=function(){
+      if(!out[j.i])out[j.i]={};
+      out[j.i][j.kind]=im;
+      finish();
+    };
+    im.onerror=finish;
     im.src=j.src;
   });
 }
@@ -1053,22 +1061,33 @@ function drawReport(earImgs){
   ears.forEach(function(e,i){
     if(!e)return;
     var rowTop=y;
-    var textY=rowTop+(hasEarPics?54:36);
+    var pics=earImgs[i]||{};
     var tx=PAD+22;
-    // thumbnail of the ear's side photo
-    var im=earImgs[i];
-    if(im){
-      var th=rowH-16, tw=Math.round(im.width*(th/im.height));
-      var maxTw=110;
-      if(tw>maxTw){tw=maxTw;th=Math.round(im.height*(tw/im.width));}
+
+    // draw a thumbnail fitted into a slot, return the width consumed
+    function thumb(im,sx,slotW,slotH){
+      if(!im)return 0;
+      var sc=Math.min(slotW/im.width, slotH/im.height);
+      var tw=Math.round(im.width*sc), th=Math.round(im.height*sc);
       var tyy=rowTop+(rowH-th)/2;
       try{
-        x.drawImage(im,PAD+14,tyy,tw,th);
-        x.strokeStyle='#d0c49a';x.lineWidth=1;x.strokeRect(PAD+14,tyy,tw,th);
-      }catch(err){}
-      tx=PAD+14+tw+16;
+        x.drawImage(im,sx,tyy,tw,th);
+        x.strokeStyle='#d0c49a';x.lineWidth=1;x.strokeRect(sx,tyy,tw,th);
+      }catch(err){return 0;}
+      return tw;
     }
-    x.fillStyle='#1c1a16';x.font='500 24px monospace';
+
+    if(pics.len||pics.wid){
+      var slotH=rowH-14, slotW=72, gap=8, cx=PAD+14;
+      var w1=thumb(pics.len,cx,slotW,slotH);          // side view (length)
+      if(w1)cx+=w1+gap;
+      var w2=thumb(pics.wid,cx,slotW,slotH);          // end view (girth)
+      if(w2)cx+=w2+gap;
+      tx=cx+8;
+    }
+
+    var textY=rowTop+(hasEarPics?54:36);
+    x.fillStyle='#1c1a16';x.font='500 22px monospace';
     x.fillText('Ear '+(i+1)+'   '+e.rows+' rows × '+e.kpr+'/row',tx,textY);
     x.fillStyle='#8a6f1e';x.textAlign='right';
     x.fillText(e.kernels.toLocaleString()+' kernels',W-PAD-22,textY);
