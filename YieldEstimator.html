@@ -39,8 +39,26 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
 .info-text{font-family:"DM Mono",monospace;font-size:9.5px;color:var(--muted);line-height:1.6;}
 .savebtn{width:100%;padding:14px;border-radius:8px;border:none;background:var(--gold);color:var(--dbg);font-family:"DM Mono",monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-weight:600;margin-top:4px;}
 .savebtn:active{opacity:.85;}
+.dlbtn{flex:1;padding:14px;border-radius:8px;border:none;font-family:"DM Mono",monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-weight:600;}
+.dlbtn.gold{background:var(--gold);color:var(--dbg);}
+.dlbtn.outline{background:transparent;color:var(--gold);border:1.5px solid var(--gold);}
+.dl-row{display:flex;gap:10px;margin-bottom:12px;}
+.canvas-wrap{overflow-x:auto;background:#ccc8bb;border-radius:8px;padding:10px;margin-top:10px;}
+.canvas-wrap canvas{display:block;border-radius:4px;max-width:100%;height:auto;}
 .rstbtn{width:100%;padding:13px;border-radius:8px;border:1.5px solid #777;background:transparent;color:#777;font-family:"DM Mono",monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:8px;}
 
+.proto-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#f0e8d8;border:1px solid var(--border);border-radius:8px;padding:11px 12px;margin-bottom:10px;cursor:pointer;font-family:"DM Mono",monospace;font-size:9.5px;letter-spacing:.5px;color:var(--gold-d);font-weight:700;text-transform:uppercase;}
+.proto-toggle:active{background:#e8dec8;}
+.proto-chev{font-size:16px;line-height:1;transition:transform .2s;color:var(--gold);}
+.proto-chev.open{transform:rotate(90deg);}
+.proto-body{display:none;background:#f0e8d8;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;}
+.proto-body.open{display:block;}
+.proto-step{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;font-family:"DM Mono",monospace;font-size:9.5px;color:var(--muted);line-height:1.65;}
+.proto-step:last-of-type{margin-bottom:0;}
+.proto-step b{color:var(--dark);}
+.proto-num{flex-shrink:0;width:18px;height:18px;border-radius:50%;background:var(--gold);color:var(--dbg);font-weight:700;font-size:9px;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.proto-note{margin-top:11px;padding-top:10px;border-top:1px solid var(--border);font-family:"DM Mono",monospace;font-size:9px;color:var(--muted);line-height:1.7;}
+.proto-note b{color:var(--gold-d);}
 .ear-tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:13px;}
 .ear-tab{padding:10px 4px;border:1.5px solid var(--border);border-radius:8px;background:rgba(200,140,60,0.07);font-family:"DM Mono",monospace;font-size:10px;font-weight:700;color:var(--muted);cursor:pointer;text-align:center;position:relative;}
 .ear-tab.on{background:var(--gold);border-color:var(--gold);color:var(--dbg);}
@@ -166,12 +184,8 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
       <div class="info-text">Walk off the row length shown for your spacing (that's 1/1,000th acre), count every ear in it, then ears &times; 1,000 = ears per acre.</div>
     </div>
     <div class="fg">
-      <label id="earsCountedLabel">Ears in 17.4 ft</label>
-      <div class="stepper">
-        <button class="minus" id="ears-minus">&minus;</button>
-        <input type="number" id="earsCounted" inputmode="numeric" value="32">
-        <button class="plus" id="ears-plus">+</button>
-      </div>
+      <label id="earsCountedLabel">Ears Counted in 17.4 ft</label>
+      <input type="number" id="earsCounted" inputmode="numeric" placeholder="Type the number of ears" style="font-size:20px;font-weight:600;text-align:center;">
     </div>
     <div class="fg">
       <label>Row Spacing</label>
@@ -183,7 +197,7 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
     </div>
     <div class="fg">
       <label>Ears Per Acre (override optional)</label>
-      <input type="number" id="earsPerAcre" inputmode="numeric" value="32000">
+      <input type="number" id="earsPerAcre" inputmode="numeric" placeholder="Auto from ear count">
       <div class="hint" id="epa-hint">Auto from count &amp; spacing. Type to override with a known stand.</div>
     </div>
   </div>
@@ -191,6 +205,35 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
   <!-- EAR SAMPLING -->
   <div class="card">
     <div class="ctitle"><span>Ear Samples</span><span class="step">Step 2 &middot; 5 ears</span></div>
+    <button class="proto-toggle" id="protoToggle">
+      <span>&#128220;&nbsp; How to pick your 5 ears</span>
+      <span class="proto-chev" id="protoChev">&#8250;</span>
+    </button>
+    <div class="proto-body" id="protoBody">
+      <div class="proto-step">
+        <span class="proto-num">1</span>
+        <div><b>Use the same row you counted.</b> Start at the beginning of the 1/1,000-acre length you just walked for your stand count.</div>
+      </div>
+      <div class="proto-step">
+        <span class="proto-num">2</span>
+        <div><b>Pull every 5th ear</b> &mdash; the 5th, 10th, 15th, 20th, and 25th eared plant down the row.</div>
+      </div>
+      <div class="proto-step">
+        <span class="proto-num">3</span>
+        <div><b>Take whatever ear that plant has.</b> Nubbin, tip-back, or beautiful &mdash; it counts. Skipping poor ears is the fastest way to overestimate a field.</div>
+      </div>
+      <div class="proto-step">
+        <span class="proto-num">4</span>
+        <div><b>Barren plant?</b> It has no ear, so your ear count already accounts for it. Move to the next eared plant and keep your every-5th rhythm from there.</div>
+      </div>
+      <div class="proto-step">
+        <span class="proto-num">5</span>
+        <div><b>Repeat in 3&ndash;5 spots per field</b> in areas that represent the whole field. Avoid end rows, headlands, and field edges.</div>
+      </div>
+      <div class="proto-note">
+        <b>Why every 5th ear?</b> Systematic spacing removes the bias your eye adds. If you choose ears that "look representative," you'll pick better-than-average ones almost every time &mdash; and the estimate comes in high. Your <b>ear count</b> carries the stand (barren plants included); your <b>5-ear sample</b> carries the average ear size. Keep the two jobs separate.
+      </div>
+    </div>
     <div class="ear-tabs" id="earTabs"></div>
 
     <div class="photo-pair">
@@ -269,7 +312,11 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
     </div>
     <div class="ear-summary" id="earSummary"></div>
     <div class="card" style="margin-top:0;">
-      <button class="savebtn" id="dlReportBtn">Download Yield Report (JPG)</button>
+      <div class="dl-row">
+        <button class="dlbtn gold" id="dlReportBtn">&#11015; Download Report</button>
+        <button class="dlbtn outline" id="previewReportBtn">&#128065; Preview</button>
+      </div>
+      <div class="canvas-wrap" id="canvas-wrap" style="display:none;"><canvas id="rpt-canvas"></canvas></div>
     </div>
   </div>
 
@@ -367,15 +414,21 @@ function showStored(kind,dataUrl){
 /* ── STAND COUNT ── */
 function rowSpace(){var b=document.querySelector('#seg-rowspace .seg-btn.on');return b?parseInt(b.dataset.val):30;}
 function autoEPA(){
-  var ears=parseInt(ge('earsCounted').value)||0;
+  var raw=(ge('earsCounted').value||'').trim();
+  var ears=parseInt(raw)||0;
   var sp=rowSpace();
   // 1/1000 acre row length (ft) = 43.56 sq ft / (row width in ft)
   var lenFt=43.56/(sp/12);
-  var perAcre=Math.round(ears*1000);   // ears counted in 1/1000 acre × 1000
-  ge('earsPerAcre').value=perAcre;
   var ft=Math.floor(lenFt), inch=Math.round((lenFt-ft)*12);
-  ge('earsCountedLabel').textContent='Ears in '+lenFt.toFixed(1)+' ft';
-  ge('epa-hint').textContent='Walk '+ft+' ft '+inch+' in of '+sp+'" row = 1/1,000 ac. '+ears+' ears → '+perAcre.toLocaleString()+' ears/ac.';
+  ge('earsCountedLabel').textContent='Ears Counted in '+lenFt.toFixed(1)+' ft';
+  if(!raw||ears<=0){
+    ge('earsPerAcre').value='';
+    ge('epa-hint').textContent='Walk '+ft+' ft '+inch+' in of '+sp+'" row (1/1,000 ac) and type the ears you count.';
+    return;
+  }
+  var perAcre=ears*1000;               // ears in 1/1000 acre × 1,000 = ears/acre
+  ge('earsPerAcre').value=perAcre;
+  ge('epa-hint').textContent=ears+' ears × 1,000 = '+perAcre.toLocaleString()+' ears/ac  ('+ft+' ft '+inch+' in of '+sp+'" row).';
 }
 
 /* ── KERNEL MATH ── */
@@ -661,7 +714,6 @@ function wireStepper(minusId,plusId,inputId,min,max,step,after){
   ge(minusId).onclick=function(){var v=(parseInt(ge(inputId).value)||0)-step;if(v<min)v=min;ge(inputId).value=v;if(after)after();};
   ge(plusId).onclick=function(){var v=(parseInt(ge(inputId).value)||0)+step;if(v>max)v=max;ge(inputId).value=v;if(after)after();};
 }
-wireStepper('ears-minus','ears-plus','earsCounted',0,200,1,autoEPA);
 wireStepper('rows-minus','rows-plus','rowsAround',8,24,2,function(){normalizeRows();recalcEar();});
 wireStepper('kpr-minus','kpr-plus','kernelsPerRow',10,60,1,recalcEar);
 ge('earsCounted').addEventListener('input',autoEPA);
@@ -890,112 +942,228 @@ function drawAgroBar(ctx,PAD,y,cw){
 }
 
 /* ── JPG FIELD REPORT ── */
-function drawReport(){
+// Preload any ear photos so they can be drawn into the report synchronously
+function preloadEarImages(cb){
+  var jobs=[];
+  ears.forEach(function(e,i){
+    if(e && e.lenImg) jobs.push({i:i,src:e.lenImg});
+  });
+  if(!jobs.length){cb({});return;}
+  var out={},done=0;
+  jobs.forEach(function(j){
+    var im=new Image();
+    im.onload=function(){out[j.i]=im;if(++done===jobs.length)cb(out);};
+    im.onerror=function(){if(++done===jobs.length)cb(out);};
+    im.src=j.src;
+  });
+}
+
+function drawReport(earImgs){
+  earImgs=earImgs||{};
   var saved=ears.filter(function(e){return e;});
   var hasSat=!!(fieldLoc.baseImgObj);
-  var W=1080,H=hasSat?1760:1410;
+  var hasEarPics=Object.keys(earImgs).length>0;
+
+  // ── layout metrics ──
+  var W=1080, PAD=48, CW=W-PAD*2;
+  var satH=hasSat?312:0;                 // header bar (44) + image (240) + gap (28)
+  var rowH=hasEarPics?96:58;             // taller rows when thumbnails are shown
+  var tableH=60+saved.length*rowH+52;    // header + rows + average
+  var H=356+220+40+120+satH+tableH+110;  // meta+yield+gap+stats+sat+table+footer
   var cv=document.createElement('canvas');cv.width=W;cv.height=H;
   var x=cv.getContext('2d');
   x.fillStyle='#f2ece0';x.fillRect(0,0,W,H);
-  // header — real Burrus logo (matching DiseaseScout)
+
+  // ── header ──
   x.fillStyle='#252018';x.fillRect(0,0,W,150);
   if(LOGO_READY){
     var hlh=54, hlw=Math.round(BURRUS_LOGO.width*(hlh/BURRUS_LOGO.height));
-    x.drawImage(BURRUS_LOGO,48,34,hlw,hlh);
+    x.drawImage(BURRUS_LOGO,PAD,34,hlw,hlh);
   }else{
-    x.fillStyle='#d4b84a';x.font='900 52px Georgia';x.fillText('BURRUS',48,95);
+    x.fillStyle='#d4b84a';x.font='900 52px Georgia';x.fillText('BURRUS',PAD,95);
   }
-  x.fillStyle='#b8972a';x.font='600 20px monospace';x.fillText('CORN YIELD ESTIMATE',48,124);
+  x.fillStyle='#b8972a';x.font='600 20px monospace';x.fillText('CORN YIELD ESTIMATE',PAD,124);
   x.strokeStyle='#b8972a';x.lineWidth=3;x.beginPath();x.moveTo(0,150);x.lineTo(W,150);x.stroke();
-  // agronomist bar (logo + user profile), same as DiseaseScout
-  drawAgroBar(x,48,166,W-96);
-  // meta
+
+  // ── agronomist bar ──
+  drawAgroBar(x,PAD,166,CW);
+
+  // ── field info ──
   var g=(ge('grower').value||'—');
   var co=(ge('county').value||'—'),dt=(ge('sampleDate').value||new Date().toLocaleDateString());
   var loc=(fieldLat!=null)?(fieldLat.toFixed(5)+', '+fieldLon.toFixed(5)):'—';
   x.fillStyle='#7a6a4a';x.font='500 20px monospace';
-  x.fillText('Grower: '+g,48,254);
-  x.fillText('County: '+co+'    '+dt,48,280);
-  x.fillText('GPS: '+loc,48,306);
+  x.fillText('Grower: '+g,PAD,254);
+  x.fillText('County: '+co+'    '+dt,PAD,280);
+  x.fillText('GPS: '+loc,PAD,306);
   var hs=ge('hybridSelect'); var hname=(hs.value?hs.options[hs.selectedIndex].textContent.split('  (')[0]:'Generic');
-  x.fillText('Hybrid: '+hname,48,332);
-  // big yield
-  x.fillStyle='#252018';x.fillRect(48,356,W-96,220);
-  x.strokeStyle='#b8972a';x.lineWidth=2;x.strokeRect(48,356,W-96,220);
-  x.fillStyle='rgba(184,151,42,0.7)';x.font='600 22px monospace';x.textAlign='center';
-  x.fillText('ESTIMATED YIELD',W/2,411);
-  x.fillStyle='#d4b84a';x.font='900 120px Georgia';
-  x.fillText(ge('yieldVal').textContent,W/2,526);
-  x.fillStyle='rgba(184,151,42,0.6)';x.font='500 24px monospace';
-  x.fillText('bushels per acre',W/2,561);
-  x.textAlign='left';
-  // stats row
-  x.fillStyle='#1c1a16';x.font='600 26px monospace';
-  x.fillText('Avg kernels/ear:  '+ge('avgKernVal').textContent,48,636);
-  x.fillText('Ears/acre:  '+(parseInt(ge('earsPerAcre').value)||0).toLocaleString(),48,676);
-  x.fillText('Kernels/bushel:  '+(parseInt(ge('kernelsPerBu').value)||80000).toLocaleString(),48,716);
-  // per-ear table
-  x.fillStyle='#252018';x.fillRect(48,756,W-96,60);
-  x.fillStyle='#d4b84a';x.font='600 22px monospace';x.fillText('PER-EAR BREAKDOWN',70,794);
-  var yy=856;x.font='500 24px monospace';
-  ears.forEach(function(e,i){
-    if(!e)return;
-    x.fillStyle='#1c1a16';
-    x.fillText('Ear '+(i+1)+'   '+e.rows+' rows × '+e.kpr+'/row',70,yy);
-    x.fillStyle='#8a6f1e';x.textAlign='right';
-    x.fillText(e.kernels.toLocaleString()+' kernels',W-70,yy);
-    x.textAlign='left';
-    x.strokeStyle='#d0c49a';x.lineWidth=1;x.beginPath();x.moveTo(48,yy+18);x.lineTo(W-48,yy+18);x.stroke();
-    yy+=58;
-  });
-  var avg=saved.length?Math.round(saved.reduce(function(s,e){return s+e.kernels;},0)/saved.length):0;
-  x.fillStyle='#f5ede0';x.fillRect(48,yy-32,W-96,52);
-  x.fillStyle='#1c1a16';x.font='700 24px monospace';x.fillText('Average',70,yy);
-  x.textAlign='right';x.fillText(avg.toLocaleString()+' kernels/ear',W-70,yy);x.textAlign='left';
-  // satellite view (Esri export image embeds cleanly thanks to crossOrigin)
+  x.fillText('Hybrid: '+hname,PAD,332);
+
+  var y=356;
+
+  // ── satellite map: directly under field info ──
   if(hasSat){
-    var sy=yy+40;
-    x.fillStyle='#252018';x.fillRect(48,sy,W-96,44);
+    x.fillStyle='#252018';x.fillRect(PAD,y,CW,44);
     x.fillStyle='#d4b84a';x.font='600 20px monospace';
-    x.fillText('FIELD LOCATION'+(fieldLoc.place?('  ·  '+fieldLoc.place.toUpperCase()):''),70,sy+29);
-    var iy=sy+52, ih=240, iw=W-96;
+    x.fillText('FIELD LOCATION'+(fieldLoc.place?('  ·  '+fieldLoc.place.toUpperCase()):''),PAD+22,y+29);
+    var iy=y+44, ih=240;
     try{
       var src=fieldLoc.baseImgObj;
-      // center-crop the square source into the wide strip
       var sSide=Math.min(src.width,src.height);
-      var sw=sSide, sh=sSide*(ih/iw);
+      var sw=sSide, sh=sSide*(ih/CW);
       var sx0=(src.width-sw)/2, sy0=(src.height-sh)/2;
-      x.drawImage(src,sx0,sy0,sw,sh,48,iy,iw,ih);
-      x.strokeStyle='#b8972a';x.lineWidth=2;x.strokeRect(48,iy,iw,ih);
-      // crosshair at the GPS point (center)
-      var ccx=48+iw/2, ccy=iy+ih/2;
+      x.drawImage(src,sx0,sy0,sw,sh,PAD,iy,CW,ih);
+      x.strokeStyle='#b8972a';x.lineWidth=2;x.strokeRect(PAD,iy,CW,ih);
+      var ccx=PAD+CW/2, ccy=iy+ih/2;
       x.strokeStyle='#d4b84a';x.lineWidth=2;
       x.beginPath();x.arc(ccx,ccy,10,0,Math.PI*2);x.stroke();
       x.beginPath();x.moveTo(ccx-18,ccy);x.lineTo(ccx-13,ccy);x.moveTo(ccx+13,ccy);x.lineTo(ccx+18,ccy);
       x.moveTo(ccx,ccy-18);x.lineTo(ccx,ccy-13);x.moveTo(ccx,ccy+13);x.lineTo(ccx,ccy+18);x.stroke();
     }catch(e){
       x.fillStyle='#7a6a4a';x.font='400 16px monospace';
-      x.fillText('(satellite image unavailable)',70,iy+30);
+      x.fillText('(satellite image unavailable)',PAD+22,iy+30);
     }
+    y=iy+ih+28;
   }
-  // footer
+
+  // ── big yield ──
+  x.fillStyle='#252018';x.fillRect(PAD,y,CW,220);
+  x.strokeStyle='#b8972a';x.lineWidth=2;x.strokeRect(PAD,y,CW,220);
+  x.fillStyle='rgba(184,151,42,0.7)';x.font='600 22px monospace';x.textAlign='center';
+  x.fillText('ESTIMATED YIELD',W/2,y+55);
+  x.fillStyle='#d4b84a';x.font='900 120px Georgia';
+  x.fillText(ge('yieldVal').textContent,W/2,y+170);
+  x.fillStyle='rgba(184,151,42,0.6)';x.font='500 24px monospace';
+  x.fillText('bushels per acre',W/2,y+205);
+  x.textAlign='left';
+  y+=220+40;
+
+  // ── stats ──
+  x.fillStyle='#1c1a16';x.font='600 26px monospace';
+  x.fillText('Avg kernels/ear:  '+ge('avgKernVal').textContent,PAD,y);
+  x.fillText('Ears/acre:  '+(parseInt(ge('earsPerAcre').value)||0).toLocaleString(),PAD,y+40);
+  x.fillText('Kernels/bushel:  '+(parseInt(ge('kernelsPerBu').value)||80000).toLocaleString(),PAD,y+80);
+  y+=120;
+
+  // ── per-ear breakdown (with photos beside each ear) ──
+  x.fillStyle='#252018';x.fillRect(PAD,y,CW,60);
+  x.fillStyle='#d4b84a';x.font='600 22px monospace';x.fillText('PER-EAR BREAKDOWN',PAD+22,y+38);
+  y+=60;
+
+  ears.forEach(function(e,i){
+    if(!e)return;
+    var rowTop=y;
+    var textY=rowTop+(hasEarPics?54:36);
+    var tx=PAD+22;
+    // thumbnail of the ear's side photo
+    var im=earImgs[i];
+    if(im){
+      var th=rowH-16, tw=Math.round(im.width*(th/im.height));
+      var maxTw=110;
+      if(tw>maxTw){tw=maxTw;th=Math.round(im.height*(tw/im.width));}
+      var tyy=rowTop+(rowH-th)/2;
+      try{
+        x.drawImage(im,PAD+14,tyy,tw,th);
+        x.strokeStyle='#d0c49a';x.lineWidth=1;x.strokeRect(PAD+14,tyy,tw,th);
+      }catch(err){}
+      tx=PAD+14+tw+16;
+    }
+    x.fillStyle='#1c1a16';x.font='500 24px monospace';
+    x.fillText('Ear '+(i+1)+'   '+e.rows+' rows × '+e.kpr+'/row',tx,textY);
+    x.fillStyle='#8a6f1e';x.textAlign='right';
+    x.fillText(e.kernels.toLocaleString()+' kernels',W-PAD-22,textY);
+    x.textAlign='left';
+    x.strokeStyle='#d0c49a';x.lineWidth=1;
+    x.beginPath();x.moveTo(PAD,rowTop+rowH);x.lineTo(W-PAD,rowTop+rowH);x.stroke();
+    y+=rowH;
+  });
+
+  // ── average ──
+  var avg=saved.length?Math.round(saved.reduce(function(s,e){return s+e.kernels;},0)/saved.length):0;
+  x.fillStyle='#f5ede0';x.fillRect(PAD,y,CW,52);
+  x.fillStyle='#1c1a16';x.font='700 24px monospace';x.fillText('Average',PAD+22,y+34);
+  x.textAlign='right';x.fillText(avg.toLocaleString()+' kernels/ear',W-PAD-22,y+34);x.textAlign='left';
+
+  // ── footer ──
   x.fillStyle='#7a6a4a';x.font='400 18px monospace';
-  x.fillText('Estimate only. Based on '+saved.length+'-ear sample at '+(parseInt(ge('kernelsPerBu').value)||80000).toLocaleString()+' kernels/bu.',48,H-60);
-  x.fillText('Burrus Field Tools',48,H-32);
+  x.fillText('Estimate only. Based on '+saved.length+'-ear sample at '+(parseInt(ge('kernelsPerBu').value)||80000).toLocaleString()+' kernels/bu.',PAD,H-60);
+  x.fillText('Burrus Field Tools',PAD,H-32);
   return cv;
 }
-ge('dlReportBtn').addEventListener('click',function(){
+
+function yeReportName(){
+  return 'yield-estimate-'
+    + ((ge('grower').value||'report').replace(/\s+/g,'-').toLowerCase())
+    + '-' + ((ge('county').value||'field').replace(/\s+/g,'-').toLowerCase())
+    + (ge('sampleDate').value?('-'+ge('sampleDate').value):'')
+    + '.jpg';
+}
+
+// Blob download fallback (mirrors DiseaseScout's disBlobDL)
+function yeBlobDL(blob,fname){
+  try{
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download=fname;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url);},2000);
+    toast('Downloaded!');
+  }catch(e){toast('Error saving: '+e.message);}
+}
+
+// Render into the on-page preview canvas (mirrors DiseaseScout's renderCanvas)
+function renderReportCanvas(cb){
+  preloadEarImages(function(imgs){
+    var src=drawReport(imgs);
+    var out=ge('rpt-canvas');
+    out.width=src.width;out.height=src.height;
+    out.getContext('2d').drawImage(src,0,0);
+    if(cb)cb(out);
+  });
+}
+
+function generateReport(){
   if(!ears.filter(function(e){return e;}).length){toast('Calculate a yield first');return;}
-  toast('Rendering report…');
+  toast('Rendering…');
   setTimeout(function(){
     try{
-      var cv=drawReport();
-      var fname='yield-'+((ge('grower').value||'report').replace(/\s+/g,'-').toLowerCase())+'-'+((ge('county').value||'field').replace(/\s+/g,'-').toLowerCase())+'-'+(ge('sampleDate').value||'')+'.jpg';
-      var a=document.createElement('a');a.href=cv.toDataURL('image/jpeg',0.92);a.download=fname;
-      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      renderReportCanvas(function(cv){
+        var fname=yeReportName();
+        cv.toBlob(function(blob){
+          if(!blob){toast('Error: could not render report');return;}
+          if(navigator.share && navigator.canShare){
+            var f=new File([blob],fname,{type:'image/jpeg'});
+            if(navigator.canShare({files:[f]})){
+              navigator.share({files:[f],title:'Corn Yield Estimate'})
+                .then(function(){toast('Shared!');})
+                .catch(function(e){if(e.name!=='AbortError')yeBlobDL(blob,fname);});
+              return;
+            }
+          }
+          yeBlobDL(blob,fname);
+        },'image/jpeg',0.92);
+      });
     }catch(e){toast('Error: '+e.message);}
-  },120);
-});
+  },150);
+}
+
+function previewReport(){
+  if(!ears.filter(function(e){return e;}).length){toast('Calculate a yield first');return;}
+  toast('Building…');
+  setTimeout(function(){
+    try{
+      renderReportCanvas(function(){
+        var w=ge('canvas-wrap');
+        w.style.display='block';
+        w.scrollIntoView({behavior:'smooth'});
+        toast('Preview ready');
+      });
+    }catch(e){toast('Error: '+e.message);}
+  },80);
+}
+
+ge('dlReportBtn').addEventListener('click',generateReport);
+ge('previewReportBtn').addEventListener('click',previewReport);
 
 /* ── HYBRID KERNEL WEIGHT DATA (Burrus assigned kernels/bu) ── */
 var HYBRIDS=[
@@ -1115,6 +1283,21 @@ var HYBRIDS=[
       else{inp.value='';applyHybrid(null);}                // ambiguous/no match → generic
     },150);
   });
+})();
+
+/* ── SAMPLING PROTOCOL DISCLOSURE ── */
+(function(){
+  var btn=ge('protoToggle'), body=ge('protoBody'), chev=ge('protoChev');
+  function setOpen(open){
+    body.classList.toggle('open',open);
+    chev.classList.toggle('open',open);
+    try{localStorage.setItem('ye-proto-open',open?'1':'0');}catch(e){}
+  }
+  // default open the first time, then remember the user's choice
+  var saved=null;
+  try{saved=localStorage.getItem('ye-proto-open');}catch(e){}
+  setOpen(saved===null?true:saved==='1');
+  btn.addEventListener('click',function(){setOpen(!body.classList.contains('open'));});
 })();
 
 /* init */
