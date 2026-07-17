@@ -514,6 +514,22 @@ ge('zoomClose').onclick=function(){ge('zoomOverlay').style.display='none';};
 
 /* ── GEMINI BATCH ANALYSIS ── */
 // persist key locally (NOT in artifact storage rules — this is a hosted file)
+// Accept a key handed off via QR/setup link: ...YieldEstimator.html#key=AIza...
+// The key is saved to this device, then wiped from the URL so it isn't left in
+// the address bar, history entry, or any screenshot of the page.
+(function keyFromLink(){
+  try{
+    var h=window.location.hash||'';
+    var m=h.match(/[#&]key=([^&]+)/);
+    if(!m)return;
+    var k=decodeURIComponent(m[1]).trim();
+    if(!k)return;
+    localStorage.setItem('burrusGemKey',k);
+    // strip the fragment without leaving a history entry
+    history.replaceState(null,'',window.location.pathname+window.location.search);
+    setTimeout(function(){toast('API key loaded — AI counting ready');},400);
+  }catch(e){}
+})();
 try{var sk=localStorage.getItem('burrusGemKey');if(sk)ge('gemKey').value=sk;}catch(e){}
 function refreshKeyPill(){
   var has=!!(ge('gemKey').value||'').trim();
