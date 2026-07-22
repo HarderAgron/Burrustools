@@ -437,7 +437,10 @@ ge('tb-logo').src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVsAAABlCAYAAAD
 // Build the setup URL the QR encodes
 function setupURL(key){
   var base=window.location.href.replace(/KeySetup\.html.*$/,'YieldEstimator.html');
-  return base+'#key='+encodeURIComponent(key);
+  // Query param rather than #fragment: some phone camera apps and in-app browsers
+  // drop the fragment when opening a scanned link. The tool reads either form and
+  // wipes it from the address bar on arrival.
+  return base+'?key='+encodeURIComponent(key);
 }
 
 ge('genBtn').addEventListener('click',function(){
