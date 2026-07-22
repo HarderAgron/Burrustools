@@ -517,17 +517,36 @@ ge('zoomClose').onclick=function(){ge('zoomOverlay').style.display='none';};
 // Accept a key handed off via QR/setup link: ...YieldEstimator.html#key=AIza...
 // The key is saved to this device, then wiped from the URL so it isn't left in
 // the address bar, history entry, or any screenshot of the page.
+// Accept a key handed off via QR/setup link. Supports BOTH forms:
+//   ...YieldEstimator.html?key=AIza...      (query — survives more scanner apps)
+//   ...YieldEstimator.html#key=AIza...      (fragment — never sent to a server)
+// Some phone camera apps and in-app browsers drop the fragment, so we read either.
+var keyLinkResult=null;
 (function keyFromLink(){
   try{
-    var h=window.location.hash||'';
-    var m=h.match(/[#&]key=([^&]+)/);
-    if(!m)return;
-    var k=decodeURIComponent(m[1]).trim();
-    if(!k)return;
-    localStorage.setItem('burrusGemKey',k);
-    // strip the fragment without leaving a history entry
-    history.replaceState(null,'',window.location.pathname+window.location.search);
-    setTimeout(function(){toast('API key loaded — AI counting ready');},400);
+    var found=null;
+    var q=window.location.search||'';
+    var mq=q.match(/[?&]key=([^&]+)/);
+    if(mq) found=mq[1];
+    if(!found){
+      var h=window.location.hash||'';
+      var mh=h.match(/[#&]key=([^&]+)/);
+      if(mh) found=mh[1];
+    }
+    if(!found) return;
+    var k=decodeURIComponent(found).trim();
+    if(!k) return;
+    try{
+      localStorage.setItem('burrusGemKey',k);
+      // confirm it actually persisted (private mode / blocked storage can silently fail)
+      var back=localStorage.getItem('burrusGemKey');
+      keyLinkResult = (back===k) ? 'saved' : 'nostore';
+    }catch(err){
+      keyLinkResult='nostore';
+    }
+    window._pendingKey=k;   // hold it for this session even if storage failed
+    // wipe the key out of the address bar either way
+    try{history.replaceState(null,'',window.location.pathname);}catch(e){}
   }catch(e){}
 })();
 try{var sk=localStorage.getItem('burrusGemKey');if(sk)ge('gemKey').value=sk;}catch(e){}
@@ -548,6 +567,21 @@ ge('keySave').addEventListener('click',function(){
   ge('gemKey').value=v;
   try{v?localStorage.setItem('burrusGemKey',v):localStorage.removeItem('burrusGemKey');}catch(e){}
   refreshKeyPill();
+// report how the scanned-link handoff went (or fix up a failed storage write)
+(function reportKeyLink(){
+  if(!keyLinkResult && !window._pendingKey) return;
+  if(window._pendingKey && !(ge('gemKey').value||'').trim()){
+    ge('gemKey').value=window._pendingKey;
+    refreshKeyPill();
+  }
+  setTimeout(function(){
+    if(keyLinkResult==='saved'){
+      toast('API key loaded — AI counting ready');
+    }else{
+      toast('Key applied for now, but could not be saved on this device');
+    }
+  },500);
+})();
   ge('keyOverlay').style.display='none';
   toast(v?'Key saved on this device':'Key cleared');
 });
