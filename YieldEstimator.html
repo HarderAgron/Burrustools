@@ -179,7 +179,6 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
         <button class="seg-btn" data-adj="20" data-lbl="Severe">Severe<br><span style="font-size:8px;opacity:.75;">+20%</span></button>
       </div>
       <div class="hint" id="stressHint">Stressed kernels weigh less, so more of them make a bushel &mdash; this raises kernels/bu and lowers the estimate.</div>
-      <button class="dlbtn outline" id="wxBtn" style="width:100%;margin-top:8px;">&#127782; Check Grain Fill Weather</button>
       <div class="cv-status" id="wxStatus" style="margin-top:6px;min-height:12px;"></div>
       <div id="wxDetail" style="display:none;background:#f0e8d8;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-top:8px;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);line-height:1.8;"></div>
     </div>
@@ -208,10 +207,8 @@ html,body{height:100%;overflow:hidden;background:#ddd6c4;font-family:"Source Ser
         <button class="seg-btn on" data-val="30">30"</button>
       </div>
     </div>
-    <div class="fg">
-      <label>Ears Per Acre (override optional)</label>
-      <input type="number" id="earsPerAcre" inputmode="numeric" placeholder="Auto from ear count">
-      <div class="hint" id="epa-hint">Auto from count &amp; spacing. Type to override with a known stand.</div>
+    <div class="fg" style="margin-top:-4px;">
+      <div class="hint" id="epa-hint">Auto from count &amp; spacing.</div>
     </div>
   </div>
 
@@ -920,6 +917,8 @@ function showStored(kind,dataUrl){
 }
 
 /* ── STAND COUNT ── */
+var epaValue=0;   // ears/acre, derived from ear count + row spacing (no on-screen box)
+function getEPA(){return epaValue;}
 function rowSpace(){var b=document.querySelector('#seg-rowspace .seg-btn.on');return b?parseInt(b.dataset.val):30;}
 function autoEPA(){
   var raw=(ge('earsCounted').value||'').trim();
@@ -930,12 +929,12 @@ function autoEPA(){
   var ft=Math.floor(lenFt), inch=Math.round((lenFt-ft)*12);
   ge('earsCountedLabel').textContent='Ears Counted in '+lenFt.toFixed(1)+' ft';
   if(!raw||ears<=0){
-    ge('earsPerAcre').value='';
+    epaValue=0;
     ge('epa-hint').textContent='Walk '+ft+' ft '+inch+' in of '+sp+'" row (1/1,000 ac) and type the ears you count.';
     return;
   }
   var perAcre=ears*1000;               // ears in 1/1000 acre × 1,000 = ears/acre
-  ge('earsPerAcre').value=perAcre;
+  epaValue=perAcre;
   ge('epa-hint').textContent=ears+' ears × 1,000 = '+perAcre.toLocaleString()+' ears/ac  ('+ft+' ft '+inch+' in of '+sp+'" row).';
 }
 
@@ -1336,7 +1335,8 @@ function calcYield(){
   var saved=ears.filter(function(e){return e;});
   if(!saved.length){toast('Save at least one ear');return;}
   var avgK=saved.reduce(function(s,e){return s+e.kernels;},0)/saved.length;
-  var epa=parseInt(ge('earsPerAcre').value)||0;
+  var epa=getEPA();
+  if(!epa){toast('Enter your ear count first');return;}
   var kpb=parseInt(ge('kernelsPerBu').value)||80000;
   var yld=(epa*avgK)/kpb;
   ge('yieldVal').textContent=Math.round(yld);
@@ -1358,7 +1358,6 @@ function wireStepper(minusId,plusId,inputId,min,max,step,after){
 wireStepper('rows-minus','rows-plus','rowsAround',8,24,2,function(){normalizeRows();recalcEar();});
 wireStepper('kpr-minus','kpr-plus','kernelsPerRow',10,60,1,recalcEar);
 ge('earsCounted').addEventListener('input',autoEPA);
-ge('earsPerAcre').addEventListener('input',function(){ge('epa-hint').textContent='Manual override: '+(parseInt(this.value)||0).toLocaleString()+' ears/ac.';});
 ge('rowsAround').addEventListener('input',recalcEar);
 ge('rowsAround').addEventListener('blur',normalizeRows);
 ge('kernelsPerRow').addEventListener('input',recalcEar);
@@ -1393,6 +1392,7 @@ function captureFieldLocation(){
       lat.toFixed(5)+'°'+(lat>=0?'N':'S')+' · '+Math.abs(lon).toFixed(5)+'°'+(lon>=0?'E':'W');
     loadFieldSatellite(lat,lon);
     reverseGeocodeField(lat,lon);
+    if(typeof fetchGrainFillWeather==='function')fetchGrainFillWeather();
   },function(err){
     btn.disabled=false;
     var msg='Could not get location.';
@@ -1691,7 +1691,7 @@ function drawReport(earImgs){
   // ── stats ──
   x.fillStyle='#1c1a16';x.font='600 26px monospace';
   x.fillText('Avg kernels/ear:  '+ge('avgKernVal').textContent,PAD,y);
-  x.fillText('Ears/acre:  '+(parseInt(ge('earsPerAcre').value)||0).toLocaleString(),PAD,y+40);
+  x.fillText('Ears/acre:  '+getEPA().toLocaleString(),PAD,y+40);
   x.fillText('Kernels/bushel:  '+(parseInt(ge('kernelsPerBu').value)||80000).toLocaleString(),PAD,y+80);
   y+=120;
 
@@ -2018,17 +2018,13 @@ function fmtD(d){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
-ge('wxBtn').addEventListener('click',function(){
-  if(fieldLoc.lat==null){
-    ge('wxStatus').innerHTML='<span style="color:#c0392b">Get the field location first (Report Info above).</span>';
-    return;
-  }
+function fetchGrainFillWeather(){
+  if(fieldLoc.lat==null)return;
   var w=gfWindow();
   if(w.end<=w.start){
     ge('wxStatus').innerHTML='<span style="color:#c0392b">Grain fill window hasn\'t started yet for '+w.yr+'.</span>';
     return;
   }
-  var btn=ge('wxBtn');btn.disabled=true;
   ge('wxStatus').innerHTML='<span class="spinner"></span>Pulling '+fmtD(w.start).slice(5)+' → '+fmtD(w.end).slice(5)+' weather…';
   var url='https://archive-api.open-meteo.com/v1/archive?latitude='+fieldLoc.lat+'&longitude='+fieldLoc.lon
     +'&start_date='+fmtD(w.start)+'&end_date='+fmtD(w.end)
@@ -2053,12 +2049,10 @@ ge('wxBtn').addEventListener('click',function(){
     var expRain=days*0.20;
     var rainPct=Math.round((totalRain/expRain)*100);
     scoreGrainFill({days:days,totalRain:totalRain,rainPct:rainPct,hotDays:hotDays,veryHot:veryHot,maxStreak:maxStreak,w:w});
-    btn.disabled=false;
   }).catch(function(e){
     ge('wxStatus').innerHTML='<span style="color:#c0392b">'+(e.message||'Weather lookup failed')+' — set fill condition by hand.</span>';
-    btn.disabled=false;
   });
-});
+}
 
 function scoreGrainFill(s){
   // Simple additive stress score → suggested level. Deliberately conservative:
